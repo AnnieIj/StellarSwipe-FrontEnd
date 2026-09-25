@@ -1,16 +1,45 @@
 import type { Config } from "jest";
 
-const config: Config = {
+const sharedConfig = {
   preset: "ts-jest",
-  testEnvironment: "node",
+  testEnvironment: "node" as const,
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
-  testMatch: ["**/__tests__/**/*.test.{ts,tsx}"],
-  // Accessibility tests that render components need jsdom — use
-  // @jest-environment jsdom at the top of those files to opt in per-file.
-  // MSW lifecycle (listen/reset/close) is wired up for all tests below.
-  setupFilesAfterEnv: ["<rootDir>/src/mocks/jest.setup.ts"],
+};
+
+const config: Config = {
+  // Two projects:
+  //   1. "unit" — pure TypeScript tests that do not need MSW (poller, tracing, etc.)
+  //   2. "network" — tests that use MSW for HTTP mocking
+  //
+  // This split avoids the MSW ESM incompatibility surfacing in tests that
+  // don't need network mocking at all.
+  projects: [
+    {
+      ...sharedConfig,
+      displayName: "unit",
+      testMatch: [
+        "<rootDir>/src/__tests__/**/*.test.ts",
+        "<rootDir>/src/tracing/__tests__/**/*.test.ts",
+        "<rootDir>/hooks/__tests__/**/*.test.ts",
+        "<rootDir>/store/__tests__/**/*.test.ts",
+        "<rootDir>/components/__tests__/**/*.test.{ts,tsx}",
+        "<rootDir>/components/chart/__tests__/**/*.test.{ts,tsx}",
+        "<rootDir>/services/performanceMonitoring/__tests__/**/*.test.ts",
+      ],
+      // No setupFilesAfterEnv — these tests never need MSW.
+    },
+    {
+      ...sharedConfig,
+      displayName: "network",
+      testMatch: [
+        "<rootDir>/lib/__tests__/**/*.test.ts",
+      ],
+      // MSW lifecycle for HTTP-mocked tests only.
+      setupFilesAfterEnv: ["<rootDir>/src/mocks/jest.setup.ts"],
+    },
+  ],
 };
 
 export default config;

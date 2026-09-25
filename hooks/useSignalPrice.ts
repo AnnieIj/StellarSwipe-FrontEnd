@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { traceWorker } from "@/src/tracing/worker-tracing.service";
+import { PollerRepo, realClock } from "@/src/poller";
+import type { Clock, ScanResult } from "@/src/poller";
 
 export interface SignalPrice {
   executionPrice: number;
@@ -10,7 +12,7 @@ export interface SignalPrice {
 
 type FlashColor = "up" | "down" | null;
 
-// Mock polling — replace with real WebSocket/API call
+// Mock price fetch — replace with real WebSocket / Horizon API call
 function mockFetchPrice(current: SignalPrice): SignalPrice {
   const delta = (Math.random() - 0.48) * 0.002;
   const newPrice = parseFloat((current.executionPrice + delta).toFixed(4));
@@ -21,37 +23,80 @@ function mockFetchPrice(current: SignalPrice): SignalPrice {
   return { executionPrice: newPrice, roi: newRoi, confidence: newConf, updatedAt: new Date() };
 }
 
-export function useSignalPrice(intervalMs = 3000) {
+export interface UseSignalPriceOptions {
+  intervalMs?: number;
+  /**
+   * Injected clock.  Defaults to the real wall-clock.
+   * Pass a `FakeClock` in tests to control time deterministically.
+   */
+  clock?: Clock;
+}
+
+export function useSignalPrice(
+  intervalMsOrOptions: number | UseSignalPriceOptions = 3000
+) {
+  const options: UseSignalPriceOptions =
+    typeof intervalMsOrOptions === "number"
+      ? { intervalMs: intervalMsOrOptions }
+      : intervalMsOrOptions;
+
+  const intervalMs = options.intervalMs ?? 3000;
+  const clock = options.clock ?? realClock;
+
   const [price, setPrice] = useState<SignalPrice>({
     executionPrice: 0.4821,
     roi: 12.4,
     confidence: 78,
-    updatedAt: new Date(),
+    updatedAt: new Date(clock.now()),
   });
   const [flash, setFlash] = useState<FlashColor>(null);
   const [relativeTime, setRelativeTime] = useState("just now");
   const prevRef = useRef(price);
+  const pollerRef = useRef<PollerRepo | null>(null);
 
-  // Price polling
+  // Price polling via PollerRepo (clock-injectable)
   useEffect(() => {
-    const id = setInterval(() => {
-      traceWorker("worker:signalPrice:poll", async () => {
-        setPrice((prev) => {
-          const next = mockFetchPrice(prev);
-          const dir = next.executionPrice > prev.executionPrice ? "up" : next.executionPrice < prev.executionPrice ? "down" : null;
-          if (dir) {
-            setFlash(dir);
-            setTimeout(() => setFlash(null), 900);
-          }
-          prevRef.current = next;
-          return next;
+    const poller = new PollerRepo(
+      async (_cursor, _clock): Promise<ScanResult> => {
+        await traceWorker("worker:signalPrice:poll", async () => {
+          setPrice((prev) => {
+            const next = mockFetchPrice(prev);
+            const dir =
+              next.executionPrice > prev.executionPrice
+                ? "up"
+                : next.executionPrice < prev.executionPrice
+                ? "down"
+                : null;
+            if (dir) {
+              setFlash(dir);
+              globalThis.setTimeout(() => setFlash(null), 900);
+            }
+            prevRef.current = next;
+            return next;
+          });
         });
-      }).catch(console.error);
-    }, intervalMs);
-    return () => clearInterval(id);
+        return {
+          summary: "price polled",
+          latestEventAt: new Date(clock.now()).toISOString(),
+          rpcOk: true,
+          notifyOk: true,
+        };
+      },
+      { intervalMs, clock }
+    );
+
+    pollerRef.current = poller;
+    poller.start();
+
+    return () => {
+      poller.stop();
+      pollerRef.current = null;
+    };
+    // clock is intentionally stable across renders; intervalMs drives re-creation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intervalMs]);
 
-  // Relative timestamp — refreshes every 60s
+  // Relative timestamp — refreshes every 60 s (always uses realClock for display)
   useEffect(() => {
     const fmt = () => {
       const secs = Math.floor((Date.now() - price.updatedAt.getTime()) / 1000);
