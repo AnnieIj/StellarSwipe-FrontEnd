@@ -31,7 +31,10 @@
     "pass": "Kọjá",
     "execute_trade": "Ṣe Ìtúnú",
     "demo_trade": "Àpẹ̀rẹ Ìtúnú",
-    "share": "Pín"
+    "share": "Pín",
+    "matching_count": {
+      "other": "Àmì {{count}} tí ó bá \"{{query}}\" mu"
+    }
   },
   "trade": {
     "trade_executed": "Ìtúnú Ti Ṣegun",
@@ -45,7 +48,11 @@
     "enable_notifications": "Mu Àkíyèsi Sínú",
     "notifications_disabled": "Àkíyèsi afi wọlé. Wo àwọn ìtumọ aṣàwáàkì rẹ láti mu wọ́ sínú.",
     "trade_success": "Ìtúnú Ti Ṣegun",
-    "trade_failure": "Ìtúnú Ti Parun"
+    "trade_failure": "Ìtúnú Ti Parun",
+    "unread_count": {
+      "other": "Ìfitónilétí {{count}} tí a kò tíì kà"
+    },
+    "none_unread": "Àwọn ìfitónilétí, gbogbo ti a ti kà"
   },
   "wallet": {
     "connect_wallet": "Ṣo Ẹpo wa",
@@ -59,5 +66,57 @@
     "about": "Nípa",
     "analytics": "Àkúkọ̀ Nínú",
     "documentation": "Fìlẹ̀-ìwé"
+  },
+  "filters": {
+    "active_count": {
+      "other": "Àyẹ̀wò {{count}} ń ṣiṣẹ́"
+    },
+    "none_active": "Kò sí àyẹ̀wò tí ń ṣiṣẹ́"
+  },
+  "list": {
+    "viewed_all": {
+      "other": "O ti wo gbogbo nǹkan {{count}}"
+    }
+  },
+  "comparison": {
+    "items_selected": {
+      "other": "Nǹkan {{count}} ni a yàn"
+    }
+  },
+  "portfolio": {
+    "assets_count": {
+      "other": "Ohun ìní {{count}}"
+    }
+  },
+  "sessions": {
+    "revoke_all": {
+      "other": "Fagilé ìjókòó {{count}} mìíràn"
+    },
+    "just_now": "Ní àkókò yìí",
+    "minutes_ago": {
+      "other": "ìṣẹ́jú {{count}} sẹ́yìn"
+    },
+    "hours_ago": {
+      "other": "wákàtí {{count}} sẹ́yìn"
+    },
+    "days_ago": {
+      "other": "ọjọ́ {{count}} sẹ́yìn"
+    }
+  },
+  "referral": {
+    "count": {
+      "other": "ìfilọ́lẹ̀ {{count}}"
+    }
+  },
+  "compare": {
+    "export_success": {
+      "other": "Àmì {{count}} ni a fi jáde."
+    }
+  },
+  "snooze": {
+    "minutes": "ìṣẹ́jú {{count}}",
+    "hours": {
+      "other": "wákàtí {{count}}"
+    }
   }
 }

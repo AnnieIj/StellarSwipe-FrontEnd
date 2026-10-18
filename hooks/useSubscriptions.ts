@@ -9,12 +9,13 @@ interface Subscription {
 }
 
 async function fetchSubscriptions(
-  status?: SubscriptionStatus
+  status?: SubscriptionStatus,
+  signal?: AbortSignal
 ): Promise<Subscription[]> {
   const url = new URL("/api/subscriptions", window.location.origin);
   if (status) url.searchParams.set("status", status);
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { signal });
   if (!res.ok) {
     const { error } = await res.json();
     throw new Error(error ?? "Failed to fetch subscriptions");
@@ -26,6 +27,9 @@ async function fetchSubscriptions(
 export function useSubscriptions(status?: SubscriptionStatus) {
   return useQuery({
     queryKey: ["subscriptions", status ?? "all"],
-    queryFn: () => fetchSubscriptions(status),
+    // Forward React Query's per-call AbortSignal so a superseded request
+    // (e.g. the status filter changes again before this resolves) is
+    // actually cancelled at the network layer.
+    queryFn: ({ signal }) => fetchSubscriptions(status, signal),
   });
 }

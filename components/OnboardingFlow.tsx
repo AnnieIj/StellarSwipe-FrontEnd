@@ -1,9 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useOnboardingStore } from "@/store/useOnboardingStore";
+import {
+  useOnboardingStore,
+  useOnboardingHydrated,
+  ONBOARDING_TOTAL_STEPS,
+} from "@/store/useOnboardingStore";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Wallet, LayoutList, ArrowLeftRight, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Wallet,
+  LayoutList,
+  ArrowLeftRight,
+  X,
+} from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface OnboardingStep {
   icon: React.ElementType;
@@ -33,21 +44,31 @@ const STEPS: OnboardingStep[] = [
 ];
 
 export function OnboardingFlow() {
-  const { dismissed, setCompleted, setDismissed } = useOnboardingStore();
-  const [step, setStep] = useState(0);
+  const { dismissed, currentStep, setCompleted, setDismissed, setCurrentStep } =
+    useOnboardingStore();
+  const isHydrated = useOnboardingHydrated();
+  const focusTrapRef = useFocusTrap({ isActive: true });
 
-  if (dismissed) return null;
+  if (!isHydrated || dismissed) return null;
 
+  const step = Math.min(currentStep, STEPS.length - 1);
   const current = STEPS[step];
   const Icon = current.icon;
+  const isFirst = step === 0;
   const isLast = step === STEPS.length - 1;
+  const progressPercent = Math.round(((step + 1) / STEPS.length) * 100);
 
   function handleNext() {
     if (isLast) {
       setCompleted();
     } else {
-      setStep((s) => s + 1);
+      const next = step + 1;
+      setCurrentStep(next);
     }
+  }
+
+  function handleBack() {
+    if (!isFirst) setCurrentStep(step - 1);
   }
 
   return (
@@ -55,58 +76,91 @@ export function OnboardingFlow() {
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to StellarSwipe"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4"
     >
-      <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-black/50">
-        {/* Skip button */}
+      <div
+        ref={focusTrapRef}
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-auto rounded-3xl border border-white/10 bg-slate-950 p-4 shadow-2xl shadow-black/50 sm:max-h-none sm:p-6"
+      >
         <button
           type="button"
           onClick={setDismissed}
           aria-label="Skip onboarding"
-          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-500 hover:text-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+          className="absolute right-3 top-3 rounded-full p-1.5 text-slate-500 transition-colors hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:right-4 sm:top-4"
         >
           <X size={16} aria-hidden="true" />
         </button>
 
-        {/* Step indicator */}
-        <div className="mb-6 flex items-center gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                i <= step ? "bg-sky-500" : "bg-white/10"
-              }`}
-            />
-          ))}
-        </div>
+        <ol aria-label="Onboarding progress" className="mb-4 flex items-center gap-1.5">
+          {STEPS.map((s, i) => {
+            const status =
+              i < step ? "completed" : i === step ? "current" : "upcoming";
+            return (
+              <li
+                key={s.title}
+                className="flex-1"
+                aria-current={i === step ? "step" : undefined}
+              >
+                <span className="sr-only">
+                  Step {i + 1}: {s.title} ({status})
+                </span>
+                <div
+                  aria-hidden="true"
+                  className={`h-1 rounded-full transition-all duration-200 ${
+                    i <= step ? "bg-sky-500" : "bg-white/10"
+                  }`}
+                />
+              </li>
+            );
+          })}
+        </ol>
 
-        {/* Icon */}
+        <p className="mb-4 text-xs text-foreground-muted" aria-live="polite">
+          Step {step + 1} of {STEPS.length} · {progressPercent}% complete
+        </p>
+
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-400">
           <Icon size={28} aria-hidden="true" />
         </div>
 
-        {/* Content */}
         <h2 className="mb-2 text-lg font-semibold text-white">{current.title}</h2>
-        <p className="mb-6 text-sm leading-relaxed text-slate-400">{current.description}</p>
+        <p className="mb-5 text-sm leading-relaxed text-slate-400 sm:mb-6">
+          {current.description}
+        </p>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={setDismissed}
-            className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded"
+            className="rounded text-xs text-slate-500 underline transition-colors hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
           >
-            Skip
+            Skip for now
           </button>
-          <Button
-            onClick={handleNext}
-            size="sm"
-            className="flex items-center gap-1.5"
-            aria-label={isLast ? "Finish onboarding" : `Next: ${STEPS[step + 1]?.title}`}
-          >
-            {isLast ? "Get started" : "Next"}
-            <ChevronRight size={14} aria-hidden="true" />
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            {!isFirst && (
+              <Button
+                onClick={handleBack}
+                size="sm"
+                variant="ghost"
+                className="flex min-h-10 items-center justify-center gap-1.5 px-3"
+                aria-label={`Back: ${STEPS[step - 1]?.title}`}
+              >
+                <ChevronLeft size={14} aria-hidden="true" />
+                Back
+              </Button>
+            )}
+            <Button
+              onClick={handleNext}
+              size="sm"
+              className="flex min-h-10 items-center justify-center gap-1.5 px-4"
+              aria-label={
+                isLast ? "Finish onboarding" : `Next: ${STEPS[step + 1]?.title}`
+              }
+            >
+              {isLast ? "Get started" : "Next"}
+              <ChevronRight size={14} aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

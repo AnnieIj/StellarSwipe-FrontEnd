@@ -16,9 +16,16 @@ interface MetricToggleBarProps {
   onToggle: (key: string) => void;
 }
 
-export function MetricToggleBar({ hiddenMetrics, onToggle }: MetricToggleBarProps) {
+export function MetricToggleBar({
+  hiddenMetrics,
+  onToggle,
+}: MetricToggleBarProps) {
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="Toggle metrics">
+    <div
+      className="flex flex-wrap gap-2"
+      role="group"
+      aria-label="Toggle metrics"
+    >
       {ALL_METRICS.map(({ key, label }) => {
         const visible = !hiddenMetrics.includes(key);
         return (

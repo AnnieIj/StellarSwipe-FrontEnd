@@ -16,5 +16,6 @@ Implemented features:
 - Print or export articles as PDF: Export button (currently exports text) in app/education/page.tsx
 
 Notes:
+
 - This is a frontend scaffold; backend persistence (user reading list, saved progress) is not implemented here.
 - Video player embed and PDF generation can be integrated with backend services or client-side libraries as needed.

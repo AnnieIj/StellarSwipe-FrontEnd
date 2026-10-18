@@ -21,10 +21,12 @@ type LeaderboardState = {
   error: string | null;
   period: "daily" | "weekly" | "monthly" | "yearly";
   filterMarket: string | null;
+  currentUserId: string | null;
   fetchRankings: () => Promise<void>;
   setPeriod: (p: LeaderboardState["period"]) => void;
   setFilterMarket: (m: string | null) => void;
   toggleFollow: (id: string) => void;
+  setCurrentUserId: (id: string | null) => void;
 };
 
 export const useLeaderboardStore = create<LeaderboardState>()(
@@ -34,6 +36,7 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     error: null,
     period: "weekly",
     filterMarket: null,
+    currentUserId: null,
     async fetchRankings() {
       set({ loading: true, error: null });
       try {
@@ -67,6 +70,9 @@ export const useLeaderboardStore = create<LeaderboardState>()(
           e.id === id ? { ...e, followed: !e.followed } : e
         ),
       }));
+    },
+    setCurrentUserId(id) {
+      set({ currentUserId: id }, false, "setCurrentUserId");
     },
   }))
 );

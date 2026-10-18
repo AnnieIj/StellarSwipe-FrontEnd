@@ -1,0 +1,230 @@
+openapi: "3.1.0"
+info:
+  title: StellarSwipe API
+  version: "1.0.0"
+  description: Backend API for the StellarSwipe signal-feed and subscriptions.
+
+paths:
+  /api/signals:
+    get:
+      operationId: getSignals
+      summary: List paginated signals
+      description: >
+        Feed order is newest first (`timestamp` descending), with `id` ascending as the
+        tie-breaker. Use either offset pagination (`page`) or cursor pagination (`cursor`).
+        Passing `cursor` at all selects cursor mode; send an empty value for the first page.
+        Filters apply in both modes; `total` reflects the filtered set.
+      parameters:
+        - name: page
+          in: query
+          description: Offset mode only. Cannot be combined with `cursor`.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+        - name: cursor
+          in: query
+          description: >
+            Cursor mode. Opaque value from the previous response's `nextCursor`.
+            An empty value returns the first page.
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: Only return signals with this action.
+          schema:
+            $ref: "#/components/schemas/SignalAction"
+        - name: status
+          in: query
+          description: Only return signals with this status.
+          schema:
+            $ref: "#/components/schemas/SignalStatus"
+        - name: ticker
+          in: query
+          description: Only return signals for this ticker (exact match).
+          schema:
+            type: string
+        - name: provider
+          in: query
+          description: Only return signals from this provider (exact match).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            Signal feed. Offset mode returns `SignalFeedPage`; cursor mode returns
+            `SignalCursorPage`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SignalFeedPage"
+                  - $ref: "#/components/schemas/SignalCursorPage"
+        "400":
+          description: >
+            Invalid pagination parameters, invalid cursor, unknown `action` or `status`,
+            or `cursor` combined with `page`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/subscriptions:
+    get:
+      operationId: getSubscriptions
+      summary: List subscriptions, optionally filtered by status
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/SubscriptionStatus"
+      responses:
+        "200":
+          description: Subscription list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionsResponse"
+        "400":
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    SignalAction:
+      type: string
+      enum: [BUY, SELL, HOLD]
+
+    SignalStatus:
+      type: string
+      enum: [Active, Waiting, Closed]
+
+    Signal:
+      type: object
+      required: [id, ticker, action, confidence, details, timestamp, quote]
+      properties:
+        id:
+          type: string
+        ticker:
+          type: string
+        action:
+          $ref: "#/components/schemas/SignalAction"
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+        details:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        provider:
+          type: string
+        status:
+          $ref: "#/components/schemas/SignalStatus"
+        quote:
+          $ref: "#/components/schemas/Quote"
+
+    QuoteFreshness:
+      type: string
+      enum: [fresh, stale, unavailable]
+
+    Quote:
+      type: object
+      description: Price quote metadata. Missing values are null, never zero.
+      required: [price, observedAt, source, freshness]
+      properties:
+        price:
+          type: number
+          nullable: true
+        observedAt:
+          type: string
+          format: date-time
+          nullable: true
+        source:
+          type: string
+          nullable: true
+        freshness:
+          $ref: "#/components/schemas/QuoteFreshness"
+
+    SignalFeedPage:
+      type: object
+      required: [items, page, pageSize, total, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signal"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        nextPage:
+          type: integer
+          nullable: true
+        hasMore:
+          type: boolean
+
+    SignalCursorPage:
+      type: object
+      required: [items, pageSize, total, nextCursor, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signal"
+        pageSize:
+          type: integer
+        total:
+          type: integer
+          description: Number of signals matching the filters, across all pages.
+        nextCursor:
+          type: string
+          nullable: true
+          description: Pass as `cursor` to fetch the next page; null on the last page.
+        hasMore:
+          type: boolean
+
+    SubscriptionStatus:
+      type: string
+      enum: [active, inactive, pending, cancelled, expired]
+
+    Subscription:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        status:
+          $ref: "#/components/schemas/SubscriptionStatus"
+
+    SubscriptionsResponse:
+      type: object
+      required: [subscriptions]
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subscription"
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

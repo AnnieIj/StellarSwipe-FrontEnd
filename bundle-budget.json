@@ -1,0 +1,21 @@
+{
+  "budgets": [
+    {
+      "name": "First Load JS (total)",
+      "sizeKb": 550,
+      "threshold": 0.1,
+      "justification": "Increased budget to accommodate the integration of Sentry and additional UI libraries which provide crucial error tracking and enhanced user experience."
+    },
+    {
+      "name": "Main chunk",
+      "sizeKb": 100,
+      "threshold": 0.1
+    },
+    {
+      "name": "Vendor/framework chunk",
+      "sizeKb": 200,
+      "threshold": 0.1
+    }
+  ],
+  "_comment": "threshold = allowed overage fraction (0.1 = 10%). Raise a budget here with justification when intentionally accepting a larger dependency. Run 'npm run build:analyze' to see current sizes."
+}

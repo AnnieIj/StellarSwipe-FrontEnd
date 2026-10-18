@@ -2,6 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
 
 interface SlippageWarningProps {
   /** Slippage percentage, e.g. 1.8 means 1.8% */
@@ -54,7 +55,9 @@ export function SlippageWarning({
           <div className="flex items-start gap-2">
             <AlertTriangle
               size={16}
-              className={`mt-0.5 shrink-0 ${isDanger ? "text-accent-danger" : "text-accent-warning"}`}
+              className={`mt-0.5 shrink-0 ${
+                isDanger ? "text-accent-danger" : "text-accent-warning"
+              }`}
               aria-hidden="true"
             />
             <div className="flex-1 min-w-0">
@@ -63,11 +66,25 @@ export function SlippageWarning({
                   isDanger ? "text-accent-danger" : "text-accent-warning"
                 }`}
               >
-                {isDanger ? "High slippage detected" : "Slippage warning"}
+                {isDanger ? (
+                  <>
+                    High <GlossaryTerm term="slippage">slippage</GlossaryTerm>{" "}
+                    detected
+                  </>
+                ) : (
+                  <>
+                    <GlossaryTerm term="slippage">Slippage</GlossaryTerm>{" "}
+                    warning
+                  </>
+                )}
               </p>
               <p className="mt-0.5 text-xs text-foreground-muted leading-relaxed">
                 Estimated slippage is{" "}
-                <strong className={isDanger ? "text-accent-danger" : "text-accent-warning"}>
+                <strong
+                  className={
+                    isDanger ? "text-accent-danger" : "text-accent-warning"
+                  }
+                >
                   {slippage.toFixed(2)}%
                 </strong>
                 {isDanger
@@ -82,7 +99,9 @@ export function SlippageWarning({
             <button
               type="button"
               onClick={onConfirm}
-              aria-label={`Confirm trade despite ${slippage.toFixed(2)}% slippage`}
+              aria-label={`Confirm trade despite ${slippage.toFixed(
+                2
+              )}% slippage`}
               className={`flex-1 rounded-lg py-2 text-xs font-semibold transition-all
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface
                 ${

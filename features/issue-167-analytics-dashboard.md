@@ -3,6 +3,7 @@
 Planned frontend scaffold for analytics dashboard.
 
 Acceptance coverage:
+
 - Portfolio value chart: placeholder in app/analytics/page.tsx
 - Returns calculation: UI placeholders
 - Performance attribution by signal provider: placeholder
@@ -15,4 +16,5 @@ Acceptance coverage:
 - Export reports as PDF: export stub
 
 Notes:
+
 - Integrate with existing portfolio backend and charting libraries to enable full calculations and visuals.

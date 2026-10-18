@@ -71,9 +71,9 @@ test.describe("Wallet connect / disconnect flow", () => {
       .or(page.locator('[data-testid="wallet-selection-modal"]'))
       .or(page.locator("text=/Choose.*wallet|Select.*provider/i"));
 
-    await expect(walletModal.first()).toBeVisible({ timeout: 3000 }).catch(
-      () => null
-    );
+    await expect(walletModal.first())
+      .toBeVisible({ timeout: 3000 })
+      .catch(() => null);
   });
 
   test("connected state shows truncated address in navbar", async ({
@@ -133,9 +133,9 @@ test.describe("Wallet connect / disconnect flow", () => {
         .locator('button:has-text("Connect Wallet")')
         .or(page.locator('button:has-text("Connect")'));
 
-      await expect(connectBtn.first()).toBeVisible({ timeout: 3000 }).catch(
-        () => null
-      );
+      await expect(connectBtn.first())
+        .toBeVisible({ timeout: 3000 })
+        .catch(() => null);
     }
   });
 
@@ -168,9 +168,9 @@ test.describe("Wallet connect / disconnect flow", () => {
           .or(page.locator("text=/failed|rejected|error|retry/i"))
           .or(page.locator('[role="alertdialog"]'));
 
-        await expect(errorUI.first()).toBeVisible({ timeout: 5000 }).catch(
-          () => null
-        );
+        await expect(errorUI.first())
+          .toBeVisible({ timeout: 5000 })
+          .catch(() => null);
       }
     }
   });

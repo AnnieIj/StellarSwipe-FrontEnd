@@ -17,8 +17,8 @@ Maps implemented features to acceptance criteria.
 
 ## Files
 
-| File | Role |
-|------|------|
-| `services/tradeExecutionService.ts` | Queue, cache, measure, execute |
-| `hooks/useTradeExecution.ts` | React state + slippage polling |
-| `components/TradeExecutionStatus.tsx` | Real-time UI feedback |
+| File                                  | Role                           |
+| ------------------------------------- | ------------------------------ |
+| `services/tradeExecutionService.ts`   | Queue, cache, measure, execute |
+| `hooks/useTradeExecution.ts`          | React state + slippage polling |
+| `components/TradeExecutionStatus.tsx` | Real-time UI feedback          |

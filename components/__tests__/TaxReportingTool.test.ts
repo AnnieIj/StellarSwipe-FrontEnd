@@ -3,10 +3,12 @@ import {
   isLongTermHolding,
   computeTaxReport,
   exportToCsv,
+  exportToCsvWithPreset,
   formatForTurboTax,
   formatForTaxAct,
   TAX_RATES,
   LONG_TERM_THRESHOLD_DAYS,
+  CSV_PRESETS,
   type TaxableTransaction,
 } from "@/lib/taxUtils";
 
@@ -140,7 +142,9 @@ describe("computeTaxReport", () => {
   it("computes estimated tax liability using jurisdiction rates", () => {
     const reportUS = computeTaxReport(SAMPLE_TRANSACTIONS, 2025, "US");
     const reportEU = computeTaxReport(SAMPLE_TRANSACTIONS, 2025, "EU");
-    expect(reportUS.estimatedTaxLiability).not.toBe(reportEU.estimatedTaxLiability);
+    expect(reportUS.estimatedTaxLiability).not.toBe(
+      reportEU.estimatedTaxLiability
+    );
   });
 
   it("returns zero liability when there are no taxable events", () => {
@@ -163,7 +167,9 @@ describe("computeTaxReport", () => {
       },
     ];
     const report = computeTaxReport(shortOnlyTx, 2025, "US");
-    expect(report.estimatedTaxLiability).toBeCloseTo(100 * TAX_RATES.US.shortTerm);
+    expect(report.estimatedTaxLiability).toBeCloseTo(
+      100 * TAX_RATES.US.shortTerm
+    );
   });
 });
 
@@ -216,5 +222,76 @@ describe("formatForTaxAct", () => {
     const report = computeTaxReport(SAMPLE_TRANSACTIONS, 2025, "US");
     const csv = formatForTaxAct(report);
     expect(csv.split("\n").length).toBe(report.entries.length + 1);
+  });
+});
+
+describe("exportToCsvWithPreset", () => {
+  const report = computeTaxReport(SAMPLE_TRANSACTIONS, 2025, "US");
+
+  it("generic preset has correct column headers in order", () => {
+    const csv = exportToCsvWithPreset(report, "generic");
+    const headers = csv.split("\n")[0].replace(/"/g, "").split(",");
+    expect(headers).toEqual(CSV_PRESETS.generic.headers);
+  });
+
+  it("cointracker preset has correct column headers in order", () => {
+    const csv = exportToCsvWithPreset(report, "cointracker");
+    const headers = csv.split("\n")[0].replace(/"/g, "").split(",");
+    expect(headers).toEqual(CSV_PRESETS.cointracker.headers);
+    expect(headers[0]).toBe("Date");
+    expect(headers[1]).toBe("Received Quantity");
+  });
+
+  it("koinly preset has correct column headers in order", () => {
+    const csv = exportToCsvWithPreset(report, "koinly");
+    const headers = csv.split("\n")[0].replace(/"/g, "").split(",");
+    expect(headers).toEqual(CSV_PRESETS.koinly.headers);
+    expect(headers[0]).toBe("Date");
+    expect(headers[1]).toBe("Sent Amount");
+  });
+
+  it("each preset produces one data row per entry", () => {
+    const presets = ["generic", "cointracker", "koinly"] as const;
+    for (const preset of presets) {
+      const csv = exportToCsvWithPreset(report, preset);
+      const lines = csv.split("\n");
+      expect(lines.length).toBe(report.entries.length + 1);
+    }
+  });
+
+  it("different presets produce different column layouts", () => {
+    const generic = exportToCsvWithPreset(report, "generic").split("\n")[0];
+    const cointracker = exportToCsvWithPreset(report, "cointracker").split(
+      "\n"
+    )[0];
+    const koinly = exportToCsvWithPreset(report, "koinly").split("\n")[0];
+    expect(generic).not.toBe(cointracker);
+    expect(generic).not.toBe(koinly);
+    expect(cointracker).not.toBe(koinly);
+  });
+
+  it("defaults to generic when no preset specified (exportToCsv parity)", () => {
+    const withDefault = exportToCsvWithPreset(report);
+    const legacy = exportToCsv(report);
+    expect(withDefault).toBe(legacy);
+  });
+
+  it("underlying transaction data is unchanged across presets", () => {
+    const parseProceeds = (csv: string, colIndex: number) =>
+      csv
+        .split("\n")
+        .slice(1)
+        .map((row) => row.split(",")[colIndex].replace(/"/g, ""));
+
+    // generic: proceeds at index 4, cointracker: received quantity at index 1
+    const genericProceeds = parseProceeds(
+      exportToCsvWithPreset(report, "generic"),
+      4
+    );
+    const cointrackerProceeds = parseProceeds(
+      exportToCsvWithPreset(report, "cointracker"),
+      1
+    );
+    expect(genericProceeds).toEqual(cointrackerProceeds);
   });
 });

@@ -26,7 +26,10 @@ const statusMap = {
   },
 };
 
-export function OnChainConfirmationStatus({ status = "PENDING", transactionHash }: OnChainConfirmationStatusProps) {
+export function OnChainConfirmationStatus({
+  status = "PENDING",
+  transactionHash,
+}: OnChainConfirmationStatusProps) {
   const metadata = statusMap[status];
   const explorerUrl = transactionHash
     ? `https://stellar.expert/explorer/testnet/tx/${transactionHash}`

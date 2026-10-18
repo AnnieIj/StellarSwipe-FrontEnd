@@ -1,0 +1,14 @@
+{
+  "common": {
+    "loading": "Loading",
+    "error": "Error",
+    "close": "Close"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "Dashboard"
+  },
+  "signals": {
+    "buy_signal": "BUY Signal"
+  }
+}

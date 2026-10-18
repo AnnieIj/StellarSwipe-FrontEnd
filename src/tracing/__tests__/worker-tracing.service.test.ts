@@ -68,7 +68,9 @@ describe("traceWorker", () => {
 
   it("preserves caller-supplied attributes on the span without mutation", async () => {
     // The service must not alter or strip attributes — callers own what they pass
-    const finish = startSpan("worker:wallet:connect", { publicKey: "G_REDACTED" });
+    const finish = startSpan("worker:wallet:connect", {
+      publicKey: "G_REDACTED",
+    });
     const span = finish("ok");
 
     expect(span.name).toBe("worker:wallet:connect");

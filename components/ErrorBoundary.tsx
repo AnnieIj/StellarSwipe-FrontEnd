@@ -1,7 +1,10 @@
 "use client";
 
 import { Component, ErrorInfo, ReactNode } from "react";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { AlertTriangle, RefreshCw, Home, Flag } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
+
+const SUPPORT_EMAIL = "support@stellarswipe.io";
 
 interface Props {
   children: ReactNode;
@@ -12,6 +15,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  sentryEventId: string | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -21,6 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      sentryEventId: null,
     };
   }
 
@@ -31,8 +36,14 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ error, errorInfo });
 
-    console.error("[ErrorBoundary] Caught an error:", error);
-    console.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
+    Sentry.withScope((scope) => {
+      scope.setContext("component_stack", {
+        componentStack: errorInfo.componentStack,
+      });
+      Sentry.captureException(error);
+    });
+
+    this.setState({ sentryEventId: Sentry.lastEventId() ?? null });
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(
@@ -107,6 +118,15 @@ export class ErrorBoundary extends Component<Props, State> {
                 Go Home
               </button>
             </div>
+
+            <a
+              href={buildReportHref(undefined, this.state.sentryEventId)}
+              data-sentry-event-id={this.state.sentryEventId ?? ""}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-transparent px-4 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Flag className="h-4 w-4" />
+              Report this error
+            </a>
           </div>
         </div>
       );
@@ -114,4 +134,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+}
+
+function buildReportHref(
+  digest: string | undefined,
+  eventId: string | null
+): string {
+  const subject = encodeURIComponent("Error Report – StellarSwipe");
+  const body = encodeURIComponent(
+    [
+      `Error ID: ${digest ?? "n/a"}`,
+      `Sentry Event ID: ${eventId ?? "n/a"}`,
+      "",
+      "Please describe what you were doing when the error occurred:",
+      "",
+    ].join("\n")
+  );
+  return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
 }

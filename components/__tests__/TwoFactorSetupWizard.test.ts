@@ -87,19 +87,22 @@ describe("generateBackupCodes", () => {
   it("each code matches the XXXXX-XXXXX pattern", () => {
     const codes = generateBackupCodes(20);
     codes.forEach((code) => {
-      expect(/^\d{5}-\d{5}$/.test(code)).toBe(true);
+      expect(/^\d{5}-\d{5}$/.test(code.value)).toBe(true);
     });
   });
 
   it("generates unique codes", () => {
     const codes = generateBackupCodes(8);
-    const unique = new Set(codes);
+    const unique = new Set(codes.map((c) => c.value));
     expect(unique.size).toBe(8);
   });
 });
 
 describe("formatBackupCodesText", () => {
-  const codes = ["11111-22222", "33333-44444"];
+  const codes = [
+    { value: "11111-22222", consumed: false },
+    { value: "33333-44444", consumed: false },
+  ];
 
   it("includes a header mentioning StellarSwipe", () => {
     const text = formatBackupCodesText(codes, "user@test.com");
@@ -113,7 +116,7 @@ describe("formatBackupCodesText", () => {
 
   it("lists all provided backup codes", () => {
     const text = formatBackupCodesText(codes, "user@test.com");
-    codes.forEach((code) => expect(text).toContain(code));
+    codes.forEach((code) => expect(text).toContain(code.value));
   });
 
   it("numbers the codes starting from 01", () => {

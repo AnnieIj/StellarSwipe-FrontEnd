@@ -31,7 +31,11 @@
     "pass": "تخطي",
     "execute_trade": "تنفيذ الصفقة",
     "demo_trade": "صفقة تجريبية",
-    "share": "مشاركة"
+    "share": "مشاركة",
+    "matching_count": {
+      "one": "إشارة واحدة تطابق \"{{query}}\"",
+      "other": "{{count}} إشارات تطابق \"{{query}}\""
+    }
   },
   "trade": {
     "trade_executed": "تم تنفيذ الصفقة",
@@ -39,13 +43,33 @@
     "swap_completed": "تمت عملية التبادل بنجاح",
     "view_portfolio": "عرض المحفظة",
     "continue_swiping": "متابعة السحب",
-    "transaction": "المعاملة"
+    "transaction": "المعاملة",
+    "place_order": "تقديم الأمر",
+    "limit_price": "سعر محدد (USDC)",
+    "amount": "الكمية (XLM)",
+    "total": "الإجمالي (USDC)",
+    "confirm_order": "تأكيد الأمر",
+    "market_order": "أمر سوق",
+    "limit_order": "أمر محدد",
+    "stop_loss": "وقف الخسارة",
+    "position_limit": "حد المركز",
+    "network_fee": "رسوم الشبكة",
+    "price_impact": "تأثير السعر",
+    "execution": "طريقة التنفيذ",
+    "insufficient_balance": "رصيد غير كافٍ",
+    "low_balance": "رصيد منخفض",
+    "top_up": "شحن الرصيد"
   },
   "notifications": {
     "enable_notifications": "تفعيل الإشعارات",
     "notifications_disabled": "الإشعارات محجوبة. تحقق من إعدادات المتصفح.",
     "trade_success": "نجحت الصفقة",
-    "trade_failure": "فشلت الصفقة"
+    "trade_failure": "فشلت الصفقة",
+    "unread_count": {
+      "one": "إشعار واحد غير مقروء",
+      "other": "{{count}} إشعارات غير مقروءة"
+    },
+    "none_unread": "لا توجد إشعارات غير مقروءة"
   },
   "wallet": {
     "connect_wallet": "ربط المحفظة",
@@ -53,11 +77,86 @@
     "wallet_connected": "تم ربط المحفظة",
     "wallet_disconnected": "تم فصل المحفظة",
     "connection_failed": "فشل الاتصال بالمحفظة",
-    "connection_declined": "تم رفض طلب الاتصال"
+    "connection_declined": "تم رفض طلب الاتصال",
+    "network_mismatch": "شبكة المحفظة غير متطابقة",
+    "network_mismatch_desc": "محفظتك متصلة بـ {{walletNetwork}} لكن التطبيق يعمل على {{appNetwork}}. يرجى التبديل إلى الشبكة الصحيحة في محفظتك.",
+    "switch_network": "كيفية تبديل الشبكة",
+    "qr_pairing": "ربط بالرمز المربع",
+    "qr_scan_instructions": "افتح تطبيق محفظتك وامسح هذا الرمز",
+    "qr_expires_in": "ينتهي الرمز خلال",
+    "qr_regenerate": "توليد رمز جديد",
+    "qr_expired": "انتهت صلاحية الرمز",
+    "idle_timeout_warning": "انتهاء الجلسة قريباً",
+    "idle_timeout_desc": "ستنتهي جلستك خلال {{seconds}} ثانية بسبب عدم النشاط.",
+    "stay_connected": "الاستمرار في الاتصال",
+    "session_expired": "انتهت الجلسة"
   },
   "footer": {
     "about": "حول",
     "analytics": "التحليلات",
     "documentation": "الوثائق"
+  },
+  "filters": {
+    "active_count": {
+      "one": "عامل تصفية واحد نشط",
+      "other": "{{count}} عوامل تصفية نشطة"
+    },
+    "none_active": "لا توجد عوامل تصفية نشطة"
+  },
+  "list": {
+    "viewed_all": {
+      "one": "لقد شاهدت العنصر الوحيد",
+      "other": "لقد شاهدت كل الـ {{count}} عناصر"
+    }
+  },
+  "comparison": {
+    "items_selected": {
+      "one": "تم تحديد عنصر واحد",
+      "other": "تم تحديد {{count}} عناصر"
+    }
+  },
+  "portfolio": {
+    "assets_count": {
+      "one": "أصل واحد",
+      "other": "{{count}} أصول"
+    }
+  },
+  "sessions": {
+    "revoke_all": {
+      "one": "إلغاء الجلسة الأخرى",
+      "other": "إلغاء {{count}} جلسات أخرى"
+    },
+    "just_now": "الآن",
+    "minutes_ago": {
+      "one": "منذ دقيقة",
+      "other": "منذ {{count}} دقائق"
+    },
+    "hours_ago": {
+      "one": "منذ ساعة",
+      "other": "منذ {{count}} ساعات"
+    },
+    "days_ago": {
+      "one": "منذ يوم",
+      "other": "منذ {{count}} أيام"
+    }
+  },
+  "referral": {
+    "count": {
+      "one": "إحالة واحدة",
+      "other": "{{count}} إحالات"
+    }
+  },
+  "compare": {
+    "export_success": {
+      "one": "تم تصدير إشارة واحدة.",
+      "other": "تم تصدير {{count}} إشارات."
+    }
+  },
+  "snooze": {
+    "minutes": "{{count}} دقيقة",
+    "hours": {
+      "one": "ساعة واحدة",
+      "other": "{{count}} ساعات"
+    }
   }
 }

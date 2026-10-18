@@ -31,7 +31,11 @@
     "pass": "Pasar",
     "execute_trade": "Ejecutar operación",
     "demo_trade": "Operación demo",
-    "share": "Compartir"
+    "share": "Compartir",
+    "matching_count": {
+      "one": "{{count}} señal que coincide con «{{query}}»",
+      "other": "{{count}} señales que coinciden con «{{query}}»"
+    }
   },
   "trade": {
     "trade_executed": "Operación ejecutada",
@@ -45,7 +49,12 @@
     "enable_notifications": "Activar notificaciones",
     "notifications_disabled": "Notificaciones bloqueadas. Revisa los ajustes del navegador.",
     "trade_success": "Operación exitosa",
-    "trade_failure": "Operación fallida"
+    "trade_failure": "Operación fallida",
+    "unread_count": {
+      "one": "{{count}} notificación sin leer",
+      "other": "{{count}} notificaciones sin leer"
+    },
+    "none_unread": "Notificaciones, ninguna sin leer"
   },
   "wallet": {
     "connect_wallet": "Conectar billetera",
@@ -59,5 +68,68 @@
     "about": "Acerca de",
     "analytics": "Análisis",
     "documentation": "Documentación"
+  },
+  "filters": {
+    "active_count": {
+      "one": "{{count}} filtro activo",
+      "other": "{{count}} filtros activos"
+    },
+    "none_active": "Ningún filtro activo"
+  },
+  "list": {
+    "viewed_all": {
+      "one": "Ya has visto {{count}} elemento",
+      "other": "Ya has visto los {{count}} elementos"
+    }
+  },
+  "comparison": {
+    "items_selected": {
+      "one": "{{count}} elemento seleccionado",
+      "other": "{{count}} elementos seleccionados"
+    }
+  },
+  "portfolio": {
+    "assets_count": {
+      "one": "{{count}} activo",
+      "other": "{{count}} activos"
+    }
+  },
+  "sessions": {
+    "revoke_all": {
+      "one": "Revocar {{count}} otra sesión",
+      "other": "Revocar {{count}} otras sesiones"
+    },
+    "just_now": "Justo ahora",
+    "minutes_ago": {
+      "one": "hace {{count}} minuto",
+      "other": "hace {{count}} minutos"
+    },
+    "hours_ago": {
+      "one": "hace {{count}} hora",
+      "other": "hace {{count}} horas"
+    },
+    "days_ago": {
+      "one": "hace {{count}} día",
+      "other": "hace {{count}} días"
+    }
+  },
+  "referral": {
+    "count": {
+      "one": "{{count}} referido",
+      "other": "{{count}} referidos"
+    }
+  },
+  "compare": {
+    "export_success": {
+      "one": "{{count}} señal exportada.",
+      "other": "{{count}} señales exportadas."
+    }
+  },
+  "snooze": {
+    "minutes": "{{count}} min",
+    "hours": {
+      "one": "{{count}} hora",
+      "other": "{{count}} horas"
+    }
   }
 }

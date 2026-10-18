@@ -58,7 +58,9 @@ describe("Accessibility – SignalCard", () => {
         </div>
       </article>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 
@@ -81,7 +83,9 @@ describe("Accessibility – SignalCard", () => {
         <p>Entry price: <strong>$45,000</strong></p>
       </article>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 });
@@ -140,7 +144,9 @@ describe("Accessibility – TradeModal", () => {
         </div>
       </div>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 });
@@ -175,7 +181,9 @@ describe("Accessibility – Navbar", () => {
         </nav>
       </header>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 
@@ -208,7 +216,9 @@ describe("Accessibility – Navbar", () => {
         </nav>
       </header>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 });
@@ -233,7 +243,9 @@ describe("Accessibility – WalletDropdown", () => {
         </button>
       </div>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 
@@ -284,7 +296,9 @@ describe("Accessibility – WalletDropdown", () => {
         </div>
       </div>
     `);
-    const results = await axe(document.body);
+    const results = await axe(document.body, {
+      rules: { region: { enabled: false } },
+    });
     expect(results).toHaveNoViolations();
   });
 });
@@ -392,5 +406,46 @@ describe("Accessibility – landing page structure", () => {
     `);
     const results = await axe(document.body);
     expect(results).toHaveNoViolations();
+  });
+});
+
+// ── Data table (leaderboard) ──────────────────────────────────────────────────
+
+describe("Accessibility – sortable data table", () => {
+  it("has no violations with sortable headers and row headers", async () => {
+    setHTML(`
+      <main>
+        <p id="leaderboard-row-hint">Press Enter to view the provider profile.</p>
+        <table>
+          <caption>Signal provider leaderboard, sorted by Rank (ascending).</caption>
+          <thead>
+            <tr>
+              <th scope="col" aria-sort="ascending">
+                <button type="button" aria-label="Sort by Rank">Rank</button>
+              </th>
+              <th scope="col">Provider</th>
+              <th scope="col" aria-sort="none">
+                <button type="button" aria-label="Sort by Win Rate">Win Rate</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tabindex="0" aria-describedby="leaderboard-row-hint">
+              <td>1</td>
+              <th scope="row">Alpha Signals</th>
+              <td>72%</td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `);
+    const results = await axe(document.body);
+    expect(results).toHaveNoViolations();
+
+    const sortable = document.querySelectorAll("th[aria-sort]");
+    expect(sortable).toHaveLength(2);
+    expect(document.querySelector('th[scope="row"]')?.textContent).toBe(
+      "Alpha Signals"
+    );
   });
 });

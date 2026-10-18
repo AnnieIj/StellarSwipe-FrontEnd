@@ -1,9 +1,19 @@
 "use client";
 
-import { AlertTriangle, Clock, TrendingUp, ShieldOff, RefreshCw, ArrowRight } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock,
+  TrendingUp,
+  ShieldOff,
+  RefreshCw,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export type SignalConflictReason = "price_moved" | "signal_expired" | "position_limit";
+export type SignalConflictReason =
+  | "price_moved"
+  | "signal_expired"
+  | "position_limit";
 
 interface SignalConflictNoticeProps {
   reason: SignalConflictReason;
@@ -18,17 +28,20 @@ const CONFLICT_CONFIG: Record<
   price_moved: {
     icon: TrendingUp,
     title: "Price has moved",
-    description: "The execution price is no longer valid. Refresh to get the latest signal.",
+    description:
+      "The execution price is no longer valid. Refresh to get the latest signal.",
   },
   signal_expired: {
     icon: Clock,
     title: "Signal expired",
-    description: "This signal is no longer active. Choose another or refresh the feed.",
+    description:
+      "This signal is no longer active. Choose another or refresh the feed.",
   },
   position_limit: {
     icon: ShieldOff,
     title: "Position limit reached",
-    description: "You've hit your maximum open positions. Close an existing position to proceed.",
+    description:
+      "You've hit your maximum open positions. Close an existing position to proceed.",
   },
 };
 

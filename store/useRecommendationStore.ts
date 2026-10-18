@@ -1,12 +1,14 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export type RiskProfile = 'conservative' | 'moderate' | 'aggressive';
+export type RiskProfile = "conservative" | "moderate" | "aggressive";
 
 export interface RecommendationFeedback {
   signalId: string;
   liked: boolean;
   timestamp: string;
+  /** 'explicit' = thumbs up/down; 'implicit' = copy, dismiss, or other behavioral signal */
+  source: "explicit" | "implicit";
 }
 
 export interface RecommendationSettings {
@@ -27,7 +29,11 @@ interface RecommendationStore {
   recommendations: RecommendedSignal[];
   accuracyMetrics: { total: number; correct: number };
   updateSettings: (patch: Partial<RecommendationSettings>) => void;
-  addFeedback: (signalId: string, liked: boolean) => void;
+  addFeedback: (
+    signalId: string,
+    liked: boolean,
+    source?: "explicit" | "implicit"
+  ) => void;
   setRecommendations: (recs: RecommendedSignal[]) => void;
   recordAccuracy: (wasCorrect: boolean) => void;
 }
@@ -35,7 +41,11 @@ interface RecommendationStore {
 export const useRecommendationStore = create<RecommendationStore>()(
   persist(
     (set) => ({
-      settings: { enabled: true, riskProfile: 'moderate', privacyAccepted: false },
+      settings: {
+        enabled: true,
+        riskProfile: "moderate",
+        privacyAccepted: false,
+      },
       feedback: [],
       recommendations: [],
       accuracyMetrics: { total: 0, correct: 0 },
@@ -43,10 +53,10 @@ export const useRecommendationStore = create<RecommendationStore>()(
       updateSettings: (patch) =>
         set((s) => ({ settings: { ...s.settings, ...patch } })),
 
-      addFeedback: (signalId, liked) =>
+      addFeedback: (signalId, liked, source = "implicit") =>
         set((s) => ({
           feedback: [
-            { signalId, liked, timestamp: new Date().toISOString() },
+            { signalId, liked, timestamp: new Date().toISOString(), source },
             ...s.feedback.filter((f) => f.signalId !== signalId),
           ].slice(0, 200),
         })),
@@ -61,6 +71,6 @@ export const useRecommendationStore = create<RecommendationStore>()(
           },
         })),
     }),
-    { name: 'stellarswipe:recommendations' }
+    { name: "stellarswipe:recommendations" }
   )
 );

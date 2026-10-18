@@ -1,32 +1,60 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, LogOut, ChevronDown, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  Copy,
+  Loader2,
+  LogOut,
+  PlusCircle,
+  RefreshCw,
+  UserCircle2,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useClipboard } from "@/hooks/useClipboard";
+
+function truncate(key: string) {
+  return `${key.slice(0, 6)}...${key.slice(-4)}`;
+}
 
 export function WalletDropdown() {
-  const { publicKey, disconnect } = useWallet();
+  const {
+    publicKey,
+    wallets,
+    activePublicKey,
+    switchWallet,
+    connectAnother,
+    disconnect,
+    disconnectAll,
+    isConnecting,
+  } = useWallet();
+  const router = useRouter();
   const { refetch } = usePortfolio();
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const { copied, status: copyStatus, errorMessage: copyError, copy, reset: resetCopy } = useClipboard({ resetDelay: 2000 });
+  const isCopyError = copyStatus === "error";
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshed, setRefreshed] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  // Account switcher state
+  const [switchingTo, setSwitchingTo] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const truncated = publicKey
-    ? `${publicKey.slice(0, 6)}...${publicKey.slice(-4)}`
-    : "";
+  const ref = useRef<HTMLDivElement>(null);
+
+  const truncated = publicKey ? truncate(publicKey) : "";
 
   const handleCopy = useCallback(async () => {
     if (!publicKey) return;
-    await navigator.clipboard.writeText(publicKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [publicKey]);
+    await copy(publicKey);
+  }, [publicKey, copy]);
 
   function handleClose() {
     setOpen(false);
@@ -46,64 +74,74 @@ export function WalletDropdown() {
     }
   }, [isRefreshing, refetch]);
 
-  // Close on outside click
+  /**
+   * Switch to a different wallet account.
+   * Shows a loading state while switching and rolls back (preserving current
+   * context) on failure, so a failed switch never leaves the user stranded.
+   */
+  const handleSwitchWallet = useCallback(
+    async (key: string) => {
+      if (switchingTo) return;
+      setSwitchingTo(key);
+      setSwitchError(null);
+      try {
+        switchWallet(key);
+        // Refresh route data after switch so navigation context is consistent.
+        router.refresh();
+        await refetch();
+      } catch {
+        // Keep current wallet active — preserve context until switch succeeds.
+        setSwitchError("Failed to switch account. Your current account is still active.");
+        setTimeout(() => setSwitchError(null), 4000);
+      } finally {
+        setSwitchingTo(null);
+      }
+    },
+    [switchingTo, switchWallet, router, refetch]
+  );
+
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        handleClose();
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) handleClose();
     }
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  // Close on Escape + keyboard navigation within menu
   useEffect(() => {
     function onKeyDown(e: globalThis.KeyboardEvent) {
       if (e.key === "Escape") {
         handleClose();
         return;
       }
-
-      // Arrow-based navigation within the menu
       if (open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
         e.preventDefault();
         const menu = menuRef.current;
         if (!menu) return;
-
         const items = Array.from(
           menu.querySelectorAll<HTMLElement>('[role="menuitem"]')
         );
-        if (items.length === 0) return;
-
-        const currentIndex = items.indexOf(document.activeElement as HTMLElement);
-        let nextIndex: number;
-
-        if (e.key === "ArrowDown") {
-          nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length;
-        } else {
-          nextIndex =
-            currentIndex < 0
-              ? items.length - 1
-              : (currentIndex - 1 + items.length) % items.length;
-        }
-
-        items[nextIndex]?.focus();
+        if (!items.length) return;
+        const idx = items.indexOf(document.activeElement as HTMLElement);
+        const next =
+          e.key === "ArrowDown"
+            ? idx < 0
+              ? 0
+              : (idx + 1) % items.length
+            : idx < 0
+            ? items.length - 1
+            : (idx - 1 + items.length) % items.length;
+        items[next]?.focus();
       }
     }
-
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // Focus first menuitem when dropdown opens
   useEffect(() => {
     if (!open) return;
     const frame = requestAnimationFrame(() => {
-      const menu = menuRef.current;
-      if (!menu) return;
-      const firstItem = menu.querySelector<HTMLElement>('[role="menuitem"]');
-      firstItem?.focus();
+      menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     });
     return () => cancelAnimationFrame(frame);
   }, [open]);
@@ -117,25 +155,39 @@ export function WalletDropdown() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={
-          publicKey
-            ? `Wallet menu for ${truncated}. Click to open wallet actions.`
+          switchingTo
+            ? "Switching wallet account…"
+            : publicKey
+            ? `Wallet menu for ${truncated}`
             : "Wallet menu"
         }
         className="font-mono gap-2"
       >
-        {/* Connection status dot */}
-        <span
-          className="relative flex h-2 w-2 shrink-0"
-          aria-hidden="true"
-          title="Wallet connected"
-        >
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+        <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+          <span
+            className={cn(
+              "absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
+              switchingTo ? "bg-yellow-400" : "bg-green-400"
+            )}
+          />
+          <span
+            className={cn(
+              "relative inline-flex h-2 w-2 rounded-full",
+              switchingTo ? "bg-yellow-500" : "bg-green-500"
+            )}
+          />
         </span>
-
-        {/* Address — hidden on very small screens */}
-        <span className="hidden xs:inline">{truncated}</span>
-
+        <span className="max-w-[9rem] truncate sm:max-w-none">{truncated}</span>
+        {switchingTo && (
+          <span className="hidden text-[10px] font-sans text-yellow-600 dark:text-yellow-300 sm:inline">
+            Switching…
+          </span>
+        )}
+        {wallets.length > 1 && (
+          <span className="rounded-full bg-blue-500/20 px-1.5 text-[10px] text-blue-400 font-semibold">
+            {wallets.length}
+          </span>
+        )}
         <ChevronDown
           aria-hidden="true"
           className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
@@ -147,23 +199,114 @@ export function WalletDropdown() {
           ref={menuRef}
           role="menu"
           aria-label="Wallet options"
-          className="absolute right-0 mt-2 w-72 rounded-xl border bg-popover shadow-lg p-2 flex flex-col gap-1 z-50"
+          className="absolute end-0 mt-2 w-80 rounded-xl border bg-popover shadow-lg p-2 flex flex-col gap-1 z-50"
         >
-          {/* Connection status header */}
-          <div className="px-3 py-2 flex items-center gap-2">
-            <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-            </span>
-            <span className="text-xs font-medium text-green-400">Connected</span>
-          </div>
+          {/* Connected wallets list */}
+          {wallets.length > 0 && (
+            <div className="px-3 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                {wallets.length > 1 ? "Switch account" : "Current account"}
+              </p>
+              {/* Switch error — preserves context while showing feedback */}
+              {switchError && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="mb-2 flex items-start gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-[11px] text-yellow-700 dark:text-yellow-300"
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>{switchError}</span>
+                </div>
+              )}
+              <ul className="flex flex-col gap-1" role="list" aria-label="Wallet accounts">
+                {wallets.map((w) => {
+                  const isActive = w.publicKey === activePublicKey;
+                  const isSwitchingToThis = switchingTo === w.publicKey;
+                  return (
+                    <li key={w.publicKey}>
+                      <button
+                        role="menuitem"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (!isActive && !switchingTo) handleSwitchWallet(w.publicKey);
+                        }}
+                        aria-label={
+                          isActive
+                            ? `Current account: ${truncate(w.publicKey)}`
+                            : isSwitchingToThis
+                            ? `Switching to ${truncate(w.publicKey)}…`
+                            : `Switch to account: ${truncate(w.publicKey)}`
+                        }
+                        aria-pressed={isActive}
+                        aria-busy={isSwitchingToThis}
+                        disabled={!!switchingTo && !isSwitchingToThis}
+                        className={cn(
+                          "w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-mono transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          isActive
+                            ? "bg-blue-500/15 text-blue-300 border border-blue-500/30"
+                            : isSwitchingToThis
+                            ? "bg-accent text-foreground cursor-wait"
+                            : "hover:bg-accent text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <UserCircle2
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0",
+                              isActive ? "text-blue-400" : "text-muted-foreground"
+                            )}
+                            aria-hidden="true"
+                          />
+                          {truncate(w.publicKey)}
+                          {isActive && (
+                            <span className="rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-blue-400 not-sr-only">
+                              active
+                            </span>
+                          )}
+                        </span>
+                        {isSwitchingToThis ? (
+                          <Loader2
+                            className="h-3 w-3 animate-spin text-blue-400"
+                            aria-hidden="true"
+                          />
+                        ) : isActive ? (
+                          <Check
+                            className="h-3 w-3 text-blue-400"
+                            aria-label="Active"
+                          />
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
-          {/* Full address */}
+          <hr className="border-border" />
+
+          {/* Add another wallet */}
+          <button
+            role="menuitem"
+            tabIndex={0}
+            onClick={() => {
+              handleClose();
+              connectAnother();
+            }}
+            disabled={isConnecting}
+            aria-label="Connect another wallet"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors disabled:opacity-60"
+          >
+            <PlusCircle className="h-4 w-4 text-blue-400" aria-hidden="true" />
+            Connect another wallet
+          </button>
+
+          <hr className="border-border" />
+
+          {/* Full active address */}
           <p className="px-3 py-2 text-xs font-mono text-muted-foreground break-all select-all">
             {publicKey}
           </p>
-
-          <hr className="border-border" />
 
           {/* Refresh balance */}
           <button
@@ -173,7 +316,7 @@ export function WalletDropdown() {
             disabled={isRefreshing}
             aria-label={
               isRefreshing
-                ? "Refreshing wallet balance..."
+                ? "Refreshing wallet balance…"
                 : refreshed
                 ? "Balance refreshed"
                 : "Refresh wallet balance"
@@ -193,7 +336,7 @@ export function WalletDropdown() {
             )}
             <span aria-live="polite">
               {isRefreshing
-                ? "Refreshing..."
+                ? "Refreshing…"
                 : refreshed
                 ? "Balance updated"
                 : "Refresh balance"}
@@ -204,19 +347,48 @@ export function WalletDropdown() {
           <button
             role="menuitem"
             tabIndex={0}
-            onClick={handleCopy}
-            aria-label={copied ? "Address copied" : "Copy wallet address"}
+            onClick={isCopyError ? resetCopy : handleCopy}
+            aria-label={
+              copied
+                ? "Address copied"
+                : isCopyError
+                ? "Copy failed — click to dismiss"
+                : "Copy wallet address"
+            }
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
           >
             {copied ? (
               <Check aria-hidden="true" className="h-4 w-4 text-green-600" />
+            ) : isCopyError ? (
+              <AlertTriangle aria-hidden="true" className="h-4 w-4 text-yellow-500" />
             ) : (
               <Copy aria-hidden="true" className="h-4 w-4" />
             )}
-            {copied ? "Copied!" : "Copy address"}
+            {copied ? "Copied!" : isCopyError ? "Retry" : "Copy address"}
           </button>
 
-          {/* Disconnect */}
+          {/* Manual-copy fallback — only shown when clipboard API fails */}
+          {isCopyError && copyError && (
+            <div
+              role="alert"
+              className="mx-2 flex items-start gap-2 rounded border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-[11px] leading-snug text-yellow-700 dark:text-yellow-300"
+            >
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span className="flex-1">{copyError}</span>
+              <button
+                type="button"
+                aria-label="Dismiss copy error"
+                onClick={resetCopy}
+                className="shrink-0 rounded p-0.5 hover:bg-yellow-500/20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          <hr className="border-border" />
+
+          {/* Disconnect active */}
           <button
             role="menuitem"
             tabIndex={0}
@@ -224,16 +396,31 @@ export function WalletDropdown() {
               disconnect();
               setOpen(false);
             }}
-            aria-label="Disconnect wallet"
+            aria-label="Disconnect active wallet"
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
           >
             <LogOut aria-hidden="true" className="h-4 w-4" />
             Disconnect
           </button>
+
+          {/* Disconnect all */}
+          {wallets.length > 1 && (
+            <button
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => {
+                disconnectAll();
+                setOpen(false);
+              }}
+              aria-label="Disconnect all wallets"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive/80 hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+            >
+              <LogOut aria-hidden="true" className="h-4 w-4" />
+              Disconnect all
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
-
-

@@ -27,7 +27,9 @@ export function useScrollRestoration() {
     const saved = getPositions()[pathname];
     if (saved !== undefined) {
       // Defer to let the page paint before scrolling
-      requestAnimationFrame(() => window.scrollTo({ top: saved, behavior: "instant" }));
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: saved, behavior: "instant" })
+      );
     } else {
       window.scrollTo({ top: 0, behavior: "instant" });
     }

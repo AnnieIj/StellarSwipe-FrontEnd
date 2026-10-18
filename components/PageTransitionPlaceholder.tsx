@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { usePageTransitionStore } from "@/store/usePageTransitionStore";
 import { PageTransitionSkeleton } from "./PageTransitionSkeleton";
 
@@ -47,6 +47,7 @@ export function PageTransitionPlaceholder({
   const pathname = usePathname();
   const { isTransitioning, startTransition, completeTransition } =
     usePageTransitionStore();
+  const prefersReduced = useReducedMotion();
 
   const prevPathname = useRef(pathname);
   const [visiblePlaceholder, setVisiblePlaceholder] = useState(false);
@@ -90,7 +91,8 @@ export function PageTransitionPlaceholder({
 
     return () => {
       if (showTimerRef.current) clearTimeout(showTimerRef.current);
-      if (minDurationTimerRef.current) clearTimeout(minDurationTimerRef.current);
+      if (minDurationTimerRef.current)
+        clearTimeout(minDurationTimerRef.current);
     };
   }, [pathname, showDelay, minShowDuration, startTransition]);
 
@@ -98,7 +100,8 @@ export function PageTransitionPlaceholder({
   useEffect(() => {
     return () => {
       if (showTimerRef.current) clearTimeout(showTimerRef.current);
-      if (minDurationTimerRef.current) clearTimeout(minDurationTimerRef.current);
+      if (minDurationTimerRef.current)
+        clearTimeout(minDurationTimerRef.current);
     };
   }, []);
 
@@ -107,13 +110,14 @@ export function PageTransitionPlaceholder({
       {(isTransitioning || visiblePlaceholder) && (
         <motion.div
           key="page-transition-placeholder"
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{
-            duration: 0.25,
-            ease: "easeInOut",
-          }}
+          exit={{ opacity: 0, y: prefersReduced ? 0 : -12 }}
+          transition={
+            prefersReduced
+              ? { duration: 0.01 }
+              : { duration: 0.25, ease: "easeInOut" }
+          }
           className="fixed inset-0 top-14 z-loading bg-background pointer-events-none overflow-y-auto"
           aria-hidden="true"
           role="status"

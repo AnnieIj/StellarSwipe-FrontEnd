@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   t,
   getCurrentLocale,
@@ -10,10 +10,10 @@ import {
   formatCurrency,
   type Locale,
   initI18n,
-} from '@/lib/i18n';
+} from "@/lib/i18n";
 
 export function useI18n() {
-  const [locale, setLocalLocale] = useState<Locale>('en');
+  const [locale, setLocalLocale] = useState<Locale>("en");
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -25,8 +25,8 @@ export function useI18n() {
 
   // Apply dir attribute to <html> for RTL support
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.dir = isRTL(locale) ? 'rtl' : 'ltr';
+    if (typeof document !== "undefined") {
+      document.documentElement.dir = isRTL(locale) ? "rtl" : "ltr";
       document.documentElement.lang = locale;
     }
   }, [locale]);
@@ -34,6 +34,13 @@ export function useI18n() {
   const changeLocale = async (newLocale: Locale) => {
     await setLocale(newLocale);
     setLocalLocale(newLocale);
+    // Broadcast locale change so Providers (and any other listeners) can sync
+    // document-level dir/lang without requiring a full re-render of layout.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("locale-changed", { detail: { locale: newLocale } })
+      );
+    }
   };
 
   return {

@@ -17,8 +17,8 @@ Maps implemented features to acceptance criteria.
 
 ## Files
 
-| File | Role |
-|------|------|
-| `store/useWebhookStore.ts` | Persistent Zustand store for webhooks & delivery history |
-| `services/webhookService.ts` | HMAC signing, retry dispatch, sample payload builder |
-| `components/WebhookSettings.tsx` | Full management UI |
+| File                             | Role                                                     |
+| -------------------------------- | -------------------------------------------------------- |
+| `store/useWebhookStore.ts`       | Persistent Zustand store for webhooks & delivery history |
+| `services/webhookService.ts`     | HMAC signing, retry dispatch, sample payload builder     |
+| `components/WebhookSettings.tsx` | Full management UI                                       |

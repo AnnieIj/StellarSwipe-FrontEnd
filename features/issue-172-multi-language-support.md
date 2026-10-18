@@ -18,13 +18,13 @@ Maps implemented features to acceptance criteria.
 
 ## Files
 
-| File | Role |
-|------|------|
-| `lib/i18n.ts` | Extended: 7 locales, RTL helpers, Intl formatting |
-| `hooks/useI18n.ts` | Exposes formatNumber/Date/Currency, sets html dir/lang |
-| `components/LanguageSelector.tsx` | Navbar dropdown with RTL indication |
-| `public/locales/es.json` | Spanish |
-| `public/locales/fr.json` | French |
-| `public/locales/de.json` | German |
-| `public/locales/zh.json` | Chinese Simplified |
-| `public/locales/ar.json` | Arabic (RTL) |
+| File                              | Role                                                   |
+| --------------------------------- | ------------------------------------------------------ |
+| `lib/i18n.ts`                     | Extended: 7 locales, RTL helpers, Intl formatting      |
+| `hooks/useI18n.ts`                | Exposes formatNumber/Date/Currency, sets html dir/lang |
+| `components/LanguageSelector.tsx` | Navbar dropdown with RTL indication                    |
+| `public/locales/es.json`          | Spanish                                                |
+| `public/locales/fr.json`          | French                                                 |
+| `public/locales/de.json`          | German                                                 |
+| `public/locales/zh.json`          | Chinese Simplified                                     |
+| `public/locales/ar.json`          | Arabic (RTL)                                           |

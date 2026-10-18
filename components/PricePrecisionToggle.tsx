@@ -25,7 +25,11 @@ export function PricePrecisionToggle({ className }: PricePrecisionToggleProps) {
       type="button"
       role="switch"
       aria-checked={isPrecise}
-      aria-label={isPrecise ? "Switch to compact price display" : "Switch to precise price display"}
+      aria-label={
+        isPrecise
+          ? "Switch to compact price display"
+          : "Switch to precise price display"
+      }
       onClick={toggle}
       title={isPrecise ? "Compact prices" : "Precise prices"}
       className={cn(

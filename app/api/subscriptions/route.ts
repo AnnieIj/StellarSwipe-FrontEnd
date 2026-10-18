@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
   if (!status) {
     return NextResponse.json(
       {
-        error: `Invalid status "${rawStatus}". Valid values: ${Object.values(SubscriptionStatus).join(", ")}`,
+        error: `Invalid status "${rawStatus}". Valid values: ${Object.values(
+          SubscriptionStatus
+        ).join(", ")}`,
       },
       { status: 400 }
     );

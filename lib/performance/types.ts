@@ -80,7 +80,10 @@ export interface PerformanceMetricsSummary {
   memorySamples: MemorySample[];
   batterySamples: BatterySample[];
   device: DeviceSnapshot | null;
-  networkBreakdown: Record<NetworkConnectionType, { count: number; avgApiMs: number }>;
+  networkBreakdown: Record<
+    NetworkConnectionType,
+    { count: number; avgApiMs: number }
+  >;
 }
 
 export type PerformanceEventType =

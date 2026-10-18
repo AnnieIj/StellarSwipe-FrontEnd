@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { SignalProvider, ProviderSignal } from "@/lib/types";
+import { queryOptions } from "@/lib/queryOptions";
 
 const mockProviderDetails: Record<string, SignalProvider> = {
   "provider-1": {
@@ -27,8 +28,8 @@ const mockProviderSignals: Record<string, ProviderSignal[]> = {
       confidence: 87,
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       outcome: "WIN",
-      targetPrice: 0.5310,
-      actualPrice: 0.5420,
+      targetPrice: 0.531,
+      actualPrice: 0.542,
     },
     {
       id: "sig-2",
@@ -68,7 +69,7 @@ export function useProviderProfile(providerId: string) {
     queryFn: async () => {
       return mockProviderDetails[providerId] || null;
     },
-    staleTime: 60000,
+    ...queryOptions.provider,
   });
 }
 
@@ -78,6 +79,6 @@ export function useProviderSignals(providerId: string) {
     queryFn: async () => {
       return mockProviderSignals[providerId] || [];
     },
-    staleTime: 30000,
+    ...queryOptions.providerSignals,
   });
 }

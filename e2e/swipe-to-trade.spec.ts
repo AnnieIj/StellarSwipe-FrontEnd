@@ -99,9 +99,11 @@ test.describe("Swipe-to-trade journey", () => {
         const tradeModal = page
           .locator('[role="dialog"]')
           .or(page.locator('[data-testid="trade-modal"]'));
-        await expect(tradeModal).toBeVisible({ timeout: 3000 }).catch(() => {
-          // Modal may not appear if signal cards are not present in landing page layout
-        });
+        await expect(tradeModal)
+          .toBeVisible({ timeout: 3000 })
+          .catch(() => {
+            // Modal may not appear if signal cards are not present in landing page layout
+          });
       }
     }
   });
@@ -114,8 +116,11 @@ test.describe("Swipe-to-trade journey", () => {
     // Trigger the trade modal via the CTA on the landing page if present
     const tradeButton = page
       .locator('button:has-text("Trade")')
-      .or(page.locator('button:has-text("Execute")')
-      .or(page.locator('[data-testid="open-trade-modal"]')));
+      .or(
+        page
+          .locator('button:has-text("Execute")')
+          .or(page.locator('[data-testid="open-trade-modal"]'))
+      );
 
     const buttonCount = await tradeButton.count();
     if (buttonCount > 0) {
@@ -123,7 +128,9 @@ test.describe("Swipe-to-trade journey", () => {
 
       // Wait for modal
       const modal = page.locator('[role="dialog"]');
-      await expect(modal).toBeVisible({ timeout: 3000 }).catch(() => null);
+      await expect(modal)
+        .toBeVisible({ timeout: 3000 })
+        .catch(() => null);
 
       // Confirm the trade
       const confirmButton = page
@@ -140,9 +147,9 @@ test.describe("Swipe-to-trade journey", () => {
           .or(page.locator('[role="status"]'))
           .or(page.locator("text=/success|confirmed|executed/i"));
 
-        await expect(successFeedback).toBeVisible({ timeout: 5000 }).catch(
-          () => null
-        );
+        await expect(successFeedback)
+          .toBeVisible({ timeout: 5000 })
+          .catch(() => null);
       }
     }
   });

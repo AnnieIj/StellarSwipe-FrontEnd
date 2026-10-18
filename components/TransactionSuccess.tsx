@@ -4,7 +4,9 @@ import { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, ArrowRight, Eye, X, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { useTransactionStore } from "@/store/useTransactionStore";
+import { getExplorerTxUrl, normalizeNetwork } from "@/lib/stellar/explorer";
 import { showNotification } from "@/lib/notifications";
 import { useNotificationPreference } from "@/hooks/useNotificationPreference";
 import analyticsService from "@/services/analytics";
@@ -13,29 +15,34 @@ const AUTO_DISMISS_MS = 8000;
 
 export function TransactionSuccess() {
   const { success, showSuccess, clearSuccess } = useTransactionStore();
-  const { alertsEnabled, toggleAlerts } = useNotificationPreference();
+  const { alertsEnabled, toggleAlerts, categoryPreferences } =
+    useNotificationPreference();
 
   const handleViewPortfolio = useCallback(() => {
     clearSuccess();
-    console.log("Navigate to portfolio");
   }, [clearSuccess]);
 
-  const handleContinueSwiping = useCallback(() => clearSuccess(), [clearSuccess]);
+  const handleContinueSwiping = useCallback(
+    () => clearSuccess(),
+    [clearSuccess]
+  );
 
   useEffect(() => {
     if (!showSuccess || !success) return;
-    if (alertsEnabled) {
+    if (alertsEnabled && categoryPreferences.systemUpdates) {
       showNotification("Trade Executed", {
         body: `Your swap for ${success.token} at ${success.price} completed successfully`,
         icon: "✓",
+        category: "systemUpdates",
+        critical: true,
       });
     }
-    analyticsService.track('trade_confirmation_success', {
+    analyticsService.track("trade_confirmation_success", {
       asset_pair: success.token,
       amount: success.amount,
       price: success.price,
     });
-  }, [showSuccess, success, alertsEnabled]);
+  }, [showSuccess, success, alertsEnabled, categoryPreferences.systemUpdates]);
 
   useEffect(() => {
     if (!showSuccess) return;
@@ -45,7 +52,12 @@ export function TransactionSuccess() {
 
   if (!success) return null;
 
-  const truncatedHash = `${success.hash.slice(0, 8)}...${success.hash.slice(-6)}`;
+  const hash = success.hash?.trim() || null;
+  const truncatedHash = hash ? `${hash.slice(0, 8)}...${hash.slice(-6)}` : null;
+  const network = success.network ?? process.env.NEXT_PUBLIC_STELLAR_NETWORK;
+  const explorerUrl = getExplorerTxUrl(hash, network);
+  const networkLabel = normalizeNetwork(network) === "testnet" ? "Testnet" : "Mainnet";
+  const time = formatTime(success.timestamp);
 
   return (
     <AnimatePresence>
@@ -75,7 +87,11 @@ export function TransactionSuccess() {
             <div className="absolute right-4 top-4 flex gap-2">
               <button
                 onClick={() => toggleAlerts(!alertsEnabled)}
-                aria-label={alertsEnabled ? "Disable outcome alerts" : "Enable outcome alerts"}
+                aria-label={
+                  alertsEnabled
+                    ? "Disable outcome alerts"
+                    : "Enable outcome alerts"
+                }
                 className="rounded-full p-1 text-foreground-subtle transition-colors hover:bg-surface-high hover:text-foreground-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 title={alertsEnabled ? "Alerts enabled" : "Alerts disabled"}
               >
@@ -98,13 +114,22 @@ export function TransactionSuccess() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 15,
+                  delay: 0.1,
+                }}
               >
                 <div className="relative">
                   <motion.div
                     className="absolute -inset-2 rounded-full bg-accent-success/20 blur-xl"
                     animate={{ scale: [1, 1.15, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   />
                   <CheckCircle className="relative h-14 w-14 text-accent-success" />
                 </div>
@@ -139,17 +164,28 @@ export function TransactionSuccess() {
               <DetailRow label="Amount" value={success.amount} />
               <DetailRow label="Price" value={success.price} />
               <DetailRow label="Fee" value={success.fee} />
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <span className="text-xs text-foreground-subtle">Transaction</span>
-                <a
-                  href={`https://stellar.expert/explorer/testnet/tx/${success.hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs font-mono text-accent-success transition-colors hover:opacity-80"
-                >
-                  {truncatedHash}
-                  <ArrowRight className="h-3 w-3" />
-                </a>
+              <DetailRow label="Network" value={networkLabel} />
+              <DetailRow label="Time" value={time} />
+              <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="text-xs text-foreground-subtle">
+                  Transaction
+                </span>
+                {hash && explorerUrl ? (
+                  <div className="flex items-center gap-2">
+                    <CopyButton value={hash} label="Copy hash" />
+                    <a
+                      href={explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs font-mono text-accent-success transition-colors hover:opacity-80"
+                    >
+                      {truncatedHash}
+                      <ArrowRight className="h-3 w-3" />
+                    </a>
+                  </div>
+                ) : (
+                  <span className="text-sm text-foreground-subtle">Unavailable</span>
+                )}
               </div>
             </motion.div>
 
@@ -182,7 +218,15 @@ export function TransactionSuccess() {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function formatTime(timestamp?: number): string | null {
+  if (timestamp === undefined || !Number.isFinite(timestamp)) return null;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString();
+}
+
+function DetailRow({ label, value }: { label: string; value: string | null }) {
+  if (!value) return null;
   return (
     <div className="flex items-center justify-between">
       <span className="text-xs text-foreground-subtle">{label}</span>

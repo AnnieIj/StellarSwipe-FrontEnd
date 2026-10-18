@@ -37,6 +37,7 @@ function uid(): string {
 function emit(span: Span): void {
   if (process.env.NODE_ENV === "development") {
     const tag = span.status === "error" ? "❌" : "✅";
+    // eslint-disable-next-line no-console
     console.debug(
       `[trace] ${tag} ${span.name} | ${span.durationMs ?? "?"}ms`,
       span

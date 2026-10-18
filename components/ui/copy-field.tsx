@@ -17,8 +17,33 @@ export interface CopyFieldProps {
 }
 
 /**
- * CopyField — displays a truncated address/hash with an inline CopyButton.
- * Suitable for wallet addresses and transaction hashes.
+ * CopyField — displays a read-only address or hash with an inline
+ * {@link CopyButton}. Long values are truncated in the UI while the full
+ * string is always copied to the clipboard.
+ *
+ * Suitable for wallet addresses, transaction hashes, and any opaque token
+ * that users need to copy but rarely read character-by-character.
+ *
+ * @example
+ * // Wallet address with label, default truncation (8 chars each side)
+ * <CopyField
+ *   label="Wallet address"
+ *   value="GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+ * />
+ *
+ * @example
+ * // Transaction hash, show more characters
+ * <CopyField
+ *   label="Tx hash"
+ *   value="a1b2c3d4e5f6..."
+ *   truncateChars={12}
+ * />
+ *
+ * @example
+ * // Disable truncation to always show the full value
+ * <CopyField value={apiKey} truncate={false} />
+ *
+ * @see {@link https://storybook.stellarswipe.dev/?path=/docs/ui-copyfield--docs Storybook — CopyField}
  */
 export function CopyField({
   value,
@@ -35,7 +60,9 @@ export function CopyField({
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label && (
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
       )}
       <div
         className={cn(

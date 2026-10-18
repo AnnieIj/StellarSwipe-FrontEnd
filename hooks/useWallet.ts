@@ -8,11 +8,39 @@ import {
   signTransaction,
 } from "@stellar/freighter-api";
 import { useWalletStore } from "@/store/useWalletStore";
+import { useActiveFlowsStore } from "@/store/useActiveFlowsStore";
 import { NETWORK_PASSPHRASE } from "@/lib/stellar";
 import { walletToast } from "@/lib/walletToast";
 import { traceWorker } from "@/src/tracing/worker-tracing.service";
 import analyticsService from "@/services/analytics";
 import type { WalletConnectErrorReason } from "@/components/WalletConnectErrorModal";
+import * as Sentry from "@sentry/nextjs";
+
+const CONNECT_TIMEOUT_MS = 20000;
+const CONNECT_TIMEOUT_MARKER = "wallet_connect_timeout";
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(CONNECT_TIMEOUT_MARKER)),
+      ms
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
+function isTimeout(err: unknown): boolean {
+  return err instanceof Error && err.message === CONNECT_TIMEOUT_MARKER;
+}
 
 function isUserRejection(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -31,13 +59,18 @@ export function useWallet() {
   const {
     publicKey,
     isConnected: connected,
+    wallets,
+    activePublicKey,
     setPublicKey,
     setConnected,
     disconnect,
+    setActiveWallet,
+    disconnectAll,
   } = useWalletStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
-  const [connectError, setConnectError] = useState<WalletConnectErrorReason>(null);
+  const [connectError, setConnectError] =
+    useState<WalletConnectErrorReason>(null);
 
   function clearConnectError() {
     setConnectError(null);
@@ -51,20 +84,20 @@ export function useWallet() {
       if (!connectedResponse?.isConnected) {
         walletToast.notFound();
         setConnectError("not_found");
-        analyticsService.track('wallet_connect_failed', {
-          wallet_type: 'freighter',
-          reason: 'not_found',
+        analyticsService.track("wallet_connect_failed", {
+          wallet_type: "freighter",
+          reason: "not_found",
         });
         return;
       }
-      await requestAccess();
+      await withTimeout(requestAccess(), CONNECT_TIMEOUT_MS);
       const result = await getAddress();
       const key = typeof result === "string" ? result : result.address;
       setPublicKey(key);
       setConnected(true);
       walletToast.connected(key);
-      analyticsService.track('wallet_connected', {
-        wallet_type: 'freighter',
+      analyticsService.track("wallet_connected", {
+        wallet_type: "freighter",
       });
       window.dispatchEvent(
         new CustomEvent("wallet-connected", { detail: { publicKey: key } })
@@ -72,17 +105,24 @@ export function useWallet() {
     } catch (err) {
       if (isUserRejection(err)) {
         walletToast.denied();
-        analyticsService.track('wallet_connect_failed', {
-          wallet_type: 'freighter',
-          reason: 'user_rejected',
+        analyticsService.track("wallet_connect_failed", {
+          wallet_type: "freighter",
+          reason: "user_rejected",
+        });
+      } else if (isTimeout(err)) {
+        walletToast.timeout();
+        setConnectError("timeout");
+        analyticsService.track("wallet_connect_failed", {
+          wallet_type: "freighter",
+          reason: "timeout",
         });
       } else {
         walletToast.connectError();
         setConnectError("error");
-        console.error(err);
-        analyticsService.track('wallet_connect_failed', {
-          wallet_type: 'freighter',
-          reason: 'error',
+        Sentry.captureException(err);
+        analyticsService.track("wallet_connect_failed", {
+          wallet_type: "freighter",
+          reason: "error",
         });
       }
     } finally {
@@ -90,11 +130,23 @@ export function useWallet() {
     }
   }
 
-  async function sign(transactionXdr: string, networkPassphrase?: string): Promise<string> {
+  async function sign(
+    transactionXdr: string,
+    networkPassphrase?: string
+  ): Promise<string> {
     if (!connected || !publicKey) {
       throw new Error("Wallet not connected");
     }
     setIsSigning(true);
+    // A pending signature is network-bound; surface it to the network switch
+    // confirmation (#800). It can't be cancelled from the app — the user
+    // finishes or rejects it in the wallet.
+    const flowId = `signing-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    useActiveFlowsStore.getState().registerFlow({
+      id: flowId,
+      kind: "signing",
+      label: "Transaction waiting for your wallet signature",
+    });
     try {
       const result = await signTransaction(transactionXdr, {
         networkPassphrase: networkPassphrase ?? NETWORK_PASSPHRASE,
@@ -107,11 +159,54 @@ export function useWallet() {
         throw err;
       }
       walletToast.signError();
-      console.error(err);
+      Sentry.captureException(err);
       throw err;
     } finally {
+      useActiveFlowsStore.getState().unregisterFlow(flowId);
       setIsSigning(false);
     }
+  }
+
+  async function connectAnother() {
+    try {
+      setIsConnecting(true);
+      setConnectError(null);
+      const connectedResponse = await isConnected();
+      if (!connectedResponse?.isConnected) {
+        walletToast.notFound();
+        setConnectError("not_found");
+        return;
+      }
+      await withTimeout(requestAccess(), CONNECT_TIMEOUT_MS);
+      const result = await getAddress();
+      const key = typeof result === "string" ? result : result.address;
+      setPublicKey(key);
+      walletToast.connected(key);
+      analyticsService.track("wallet_connected", { wallet_type: "freighter" });
+      window.dispatchEvent(
+        new CustomEvent("wallet-connected", { detail: { publicKey: key } })
+      );
+    } catch (err) {
+      if (isUserRejection(err)) {
+        walletToast.denied();
+      } else if (isTimeout(err)) {
+        walletToast.timeout();
+        setConnectError("timeout");
+      } else {
+        walletToast.connectError();
+        setConnectError("error");
+        Sentry.captureException(err);
+      }
+    } finally {
+      setIsConnecting(false);
+    }
+  }
+
+  function switchWallet(key: string) {
+    setActiveWallet(key);
+    window.dispatchEvent(
+      new CustomEvent("wallet-connected", { detail: { publicKey: key } })
+    );
   }
 
   function disconnectWallet() {
@@ -120,11 +215,22 @@ export function useWallet() {
     window.dispatchEvent(new CustomEvent("wallet-disconnected"));
   }
 
+  function disconnectAllWallets() {
+    disconnectAll();
+    walletToast.disconnected();
+    window.dispatchEvent(new CustomEvent("wallet-disconnected"));
+  }
+
   return {
     publicKey,
     connected,
+    wallets,
+    activePublicKey,
     connect,
+    connectAnother,
+    switchWallet,
     disconnect: disconnectWallet,
+    disconnectAll: disconnectAllWallets,
     sign,
     isConnecting,
     isSigning,

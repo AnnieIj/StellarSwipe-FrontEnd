@@ -76,7 +76,10 @@ export function recordApiResponse(
   };
 
   usePerformanceMonitoringStore.getState().recordApiResponse(metric);
-  recordSession("api", `${method} ${url}`, { durationMs, status: status ?? -1 });
+  recordSession("api", `${method} ${url}`, {
+    durationMs,
+    status: status ?? -1,
+  });
 }
 
 export function recordCrash(
@@ -158,10 +161,20 @@ function patchFetch(): void {
 
     try {
       const response = await originalFetch(input, init);
-      recordApiResponse(url, method, Math.round(performance.now() - start), response.status);
+      recordApiResponse(
+        url,
+        method,
+        Math.round(performance.now() - start),
+        response.status
+      );
       return response;
     } catch (err) {
-      recordApiResponse(url, method, Math.round(performance.now() - start), null);
+      recordApiResponse(
+        url,
+        method,
+        Math.round(performance.now() - start),
+        null
+      );
       throw err;
     }
   };
@@ -243,7 +256,9 @@ function attachGlobalErrorHandlers(): void {
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason;
     const message =
-      reason instanceof Error ? reason.message : String(reason ?? "Unhandled rejection");
+      reason instanceof Error
+        ? reason.message
+        : String(reason ?? "Unhandled rejection");
     const stack = reason instanceof Error ? reason.stack : undefined;
     recordCrash(message, stack);
   });

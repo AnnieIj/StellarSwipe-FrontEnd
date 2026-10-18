@@ -1,7 +1,13 @@
 "use client";
 
 import { useTransactionStore } from "@/store/useTransactionStore";
-import { CheckCircle2, XCircle, RefreshCw, ExternalLink, X } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  ExternalLink,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,7 +38,9 @@ export function TradeStatusBanner() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      aria-label={isSuccess ? "Trade executed successfully" : "Trade execution failed"}
+      aria-label={
+        isSuccess ? "Trade executed successfully" : "Trade execution failed"
+      }
       className={cn(
         "fixed bottom-4 left-1/2 z-50 w-full max-w-md -translate-x-1/2 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-sm transition-all",
         isSuccess

@@ -60,9 +60,33 @@ export const mockSubscriptions = [
   },
 ];
 
+export const mockSessions = [
+  {
+    id: "sess_current_001",
+    deviceLabel: "Chrome on macOS",
+    location: "London, UK",
+    lastActiveAt: "2025-07-01T12:00:00Z",
+    isCurrent: true,
+  },
+  {
+    id: "sess_002",
+    deviceLabel: "Firefox on Windows 11",
+    location: "New York, US",
+    lastActiveAt: "2025-06-30T10:00:00Z",
+    isCurrent: false,
+  },
+  {
+    id: "sess_003",
+    deviceLabel: "Safari on iPhone 15",
+    location: "Tokyo, JP",
+    lastActiveAt: "2025-06-28T08:00:00Z",
+    isCurrent: false,
+  },
+];
+
 export const handlers = [
-  http.get("/api/signals", ({ request }) => {
-    const url = new URL(request.url);
+  http.get("*/api/signals", ({ request }) => {
+    const url = new URL(request.url, "http://localhost");
     const page = Number(url.searchParams.get("page") ?? "1");
     const pageSize = Number(url.searchParams.get("pageSize") ?? "10");
 
@@ -74,15 +98,17 @@ export const handlers = [
     }
 
     return HttpResponse.json({
-      signals: mockSignals,
+      items: mockSignals,
       page,
       pageSize,
       total: mockSignals.length,
+      hasMore: false,
+      nextPage: null,
     });
   }),
 
-  http.get("/api/subscriptions", ({ request }) => {
-    const url = new URL(request.url);
+  http.get("*/api/subscriptions", ({ request }) => {
+    const url = new URL(request.url, "http://localhost");
     const status = url.searchParams.get("status");
 
     const filtered = status
@@ -92,13 +118,32 @@ export const handlers = [
     return HttpResponse.json({ subscriptions: filtered });
   }),
 
-  http.post("/api/trade", async ({ request }) => {
-    const body = await request.json() as Record<string, unknown>;
+  http.post("*/api/trade", async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       success: true,
       txHash: "mock-tx-hash-abc123",
       asset: body.asset,
       amount: body.amount,
     });
+  }),
+
+  // ── Sessions ──────────────────────────────────────────────────────────────
+
+  http.get("*/api/sessions", () => {
+    return HttpResponse.json(mockSessions);
+  }),
+
+  http.delete("*/api/sessions/:sessionId", ({ params }) => {
+    const { sessionId } = params as { sessionId: string };
+    const exists = mockSessions.some((s) => s.id === sessionId);
+    if (!exists) {
+      return HttpResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post("*/api/sessions/revoke-others", () => {
+    return new HttpResponse(null, { status: 204 });
   }),
 ];

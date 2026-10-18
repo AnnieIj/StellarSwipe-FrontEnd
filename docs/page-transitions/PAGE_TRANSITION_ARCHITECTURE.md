@@ -1,0 +1,230 @@
+/\*\*
+
+- Page Transition System - Technical Architecture
+- ════════════════════════════════════════════════
+-
+- OVERVIEW
+- ────────
+- The page transition system provides a responsive loading placeholder that
+- appears during client-side route changes and smoothly dismisses when the
+- new page content renders.
+-
+- COMPONENTS & FLOW
+- ─────────────────
+-
+- 1.  usePageTransitionStore (Zustand Store)
+- └─ Location: /store/usePageTransitionStore.ts
+- └─ Purpose: Global state management for transitions
+- └─ State:
+-       • isTransitioning: boolean - transition active
+-       • fromPath: string | null - source route
+-       • toPath: string | null - destination route
+- └─ Methods:
+-       • startTransition(toPath, fromPath?) - signals transition start
+-       • completeTransition() - signals transition end
+-
+- 2.  PageTransitionPlaceholder (Main Component)
+- └─ Location: /components/PageTransitionPlaceholder.tsx
+- └─ Purpose: Orchestrates transition detection & skeleton display
+- └─ Key Features:
+-       • Detects route changes via usePathname()
+-       • Auto-selects skeleton variant based on destination route
+-       • Shows placeholder with 200ms delay (prevents flicker)
+-       • Min 300ms display duration (ensures visibility)
+-       • Smooth Framer Motion animation (fade + slide)
+-       • Dismisses when new page renders
+- └─ Props:
+-       • showDelay (200ms): delay before showing placeholder
+-       • minShowDuration (300ms): min display time
+- └─ Event Cycle:
+-       pathname changes
+-           ↓
+-       startTransition() called → isTransitioning = true
+-           ↓
+-       200ms delay (showDelay)
+-           ↓
+-       setVisiblePlaceholder(true) → skeleton renders
+-           ↓
+-       Skeleton displays with smooth fade-in + slide animation
+-           ↓
+-       New page component mounts & calls usePageTransitionComplete()
+-           ↓
+-       completeTransition() called → isTransitioning = false
+-           ↓
+-       Skeleton fades out + slides away
+-           ↓
+-       New content visible
+-
+- 3.  PageTransitionSkeleton (Skeleton Loader)
+- └─ Location: /components/PageTransitionSkeleton.tsx
+- └─ Purpose: Responsive skeleton UI that matches page layouts
+- └─ Variants:
+-       • "feed" (default)
+-         - 2-column grid (1 col on mobile)
+-         - Signal cards with header, content, stats, footer
+-         - Routes: /, /app, unmatched
+-
+-       • "detail"
+-         - Single column with multiple sections
+-         - Header + content panels
+-         - Routes: /provider/[id], /profile/*, /details/*
+-
+-       • "table"
+-         - Full-width table (stacked on mobile)
+-         - Header row + data rows
+-         - Routes: /leaderboard, /analytics, /backtest-sim
+-
+-       • "grid"
+-         - Responsive grid (1-3 columns)
+-         - Grid cards for comparison
+-         - Routes: /compare, /gallery
+- └─ Responsive Behavior:
+-       • Mobile (< 640px): Single/1-2 columns, compact spacing
+-       • Tablet (640-1024px): 2 columns, standard spacing
+-       • Desktop (> 1024px): 3+ columns, generous spacing
+-
+- 4.  usePageTransitionComplete Hook
+- └─ Location: /hooks/usePageTransitionComplete.ts
+- └─ Purpose: Signal that new page has rendered
+- └─ Usage: Call once at top of page component
+- └─ Implementation:
+-       - Uses requestAnimationFrame for proper timing
+-       - Ensures layout is painted before dismissing placeholder
+-       - Automatically handles cleanup
+-
+- TIMING STRATEGY
+- ───────────────
+- The system uses three timing layers to prevent flickering while
+- ensuring smooth visual feedback:
+-
+- 1.  Route Detection
+- pathname changes → immediately detected
+-
+- 2.  Show Delay (200ms default)
+- Purpose: Prevent flickering on fast transitions
+- Scenario: If page loads in 150ms, we don't show placeholder
+- Fast network: showDelay absorbs the latency
+- Slow network: Shows placeholder while page loads
+-
+- 3.  Min Show Duration (300ms default)
+- Purpose: Ensure placeholder visibility for UX feedback
+- Scenario: Even if new page renders immediately, show placeholder
+- Benefits:
+- - User perceives visual feedback
+- - Avoids jarring instant transitions
+- - Feels more intentional & smooth
+-
+- Timeline Example (Normal Internet):
+- 0ms → Click link / route change
+- 0ms → usePathname() detects change
+- 0ms → startTransition() called
+- 0ms → Show delay timer starts (200ms)
+- ~50ms → New page component starts rendering
+- 200ms → Placeholder becomes visible (fade + slide in)
+- ~300ms → Page rendering completes
+- 300ms → usePageTransitionComplete() called
+- 300ms → completeTransition() called
+- (if minShowDuration not reached, wait until 300ms)
+- ~550ms → Placeholder fades out + slides away
+-
+- RESPONSIVE DESIGN
+- ─────────────────
+- Tailwind breakpoints used:
+- • Mobile: < 640px (no prefix)
+- • sm: 640px+ (sm:)
+- • md: 768px+ (md:)
+- • lg: 1024px+ (lg:)
+- • xl: 1280px+ (xl:)
+-
+- Examples from PageTransitionSkeleton:
+- • grid-cols-1 md:grid-cols-2 → 1 col mobile, 2 col desktop
+- • space-y-3 md:space-y-4 → tight spacing mobile, loose desktop
+- • px-3 md:px-0 → compact padding mobile, standard desktop
+- • h-24 md:h-28 → smaller skeleton mobile, larger desktop
+-
+- ANIMATION SPECIFICATIONS
+- ────────────────────────
+- Framer Motion variants (consistent with app design):
+- • Entrance:
+- - opacity: 0 → 1 (fade in)
+- - y: 12 → 0 (slide down 12px)
+- - duration: 250ms
+- - easing: easeInOut
+- • Exit:
+- - opacity: 1 → 0 (fade out)
+- - y: 0 → -12 (slide up 12px)
+- - duration: 250ms
+- - easing: easeInOut
+-
+- Z-Index Layering
+- ───────────────
+- Placeholder sits at z-loading (600) which is:
+- • Below modals (--z-modal: 400) → NO, 600 > 400, above modals
+- Actually: z-loading: 600 is ABOVE modals (400)
+- This is intentional - loading placeholder should be visible
+- • Below toasts (--z-toast: 500) → NO, 600 > 500, above toasts
+- • Above overlay (--z-overlay: 300)
+- • Above sticky headers (--z-sticky: 200)
+- • Above dropdowns (--z-dropdown: 100)
+-
+- This layering ensures:
+- - Placeholder visible during transitions
+- - Doesn't block critical UI like toasts
+- - Can be overlaid by modals if needed
+-
+- INTEGRATION CHECKLIST
+- ─────────────────────
+- ✓ Store created: usePageTransitionStore.ts
+- ✓ Skeleton component: PageTransitionSkeleton.tsx
+- ✓ Main component: PageTransitionPlaceholder.tsx
+- ✓ Hook for pages: usePageTransitionComplete.ts
+- ✓ Integrated in layout: app/layout.tsx
+- ✓ Documentation: TRANSITION_IMPLEMENTATION_GUIDE.md
+- ✓ This technical spec
+-
+- PERFORMANCE CONSIDERATIONS
+- ──────────────────────────
+- • AnimatePresence mode="wait" prevents simultaneous animations
+- • requestAnimationFrame ensures proper paint timing
+- • Minimal re-renders via Zustand (no Context API overhead)
+- • CSS animate-pulse respects prefers-reduced-motion
+- • Pointer-events: none prevents interaction during transition
+- • Cleanup timers prevent memory leaks
+-
+- ACCESSIBILITY
+- ──────────────
+- • role="status" informs screen readers of page state
+- • aria-label="Page loading" provides semantic context
+- • aria-hidden="true" on content wrapper (visual-only)
+- • Respects prefers-reduced-motion media query
+- • Semantic skeleton avoids empty divs
+-
+- EDGE CASES HANDLED
+- ──────────────────
+- 1.  Fast navigation (< 200ms)
+- → Show delay prevents placeholder flicker
+-
+- 2.  Slow page render (> 300ms)
+- → Min show duration ensures visible feedback
+-
+- 3.  Rapid route changes
+- → Previous timers cleared, new transition starts
+-
+- 4.  Component unmount during transition
+- → All timers cleaned up in useEffect return
+-
+- 5.  Same route navigation (e.g., /page?id=1 → /page?id=2)
+- → usePathname() doesn't change, no transition triggered
+- → This is correct behavior (query params don't trigger transitions)
+-
+- FUTURE ENHANCEMENTS
+- ───────────────────
+- • Query param detection for same-path transitions
+- • Route-specific custom skeletons
+- • Configurable animation variations
+- • Analytics integration (track transition durations)
+- • Experimental skeleton streaming with Server Components
+- • Progressive enhancement with navigation preloading API
+  \*/
+
+export {};

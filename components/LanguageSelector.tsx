@@ -41,7 +41,7 @@ export function LanguageSelector() {
 
       {showMenu && (
         <div
-          className="absolute right-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-20 min-w-[180px] p-1"
+          className="absolute end-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-20 min-w-[180px] p-1"
           role="listbox"
           aria-label="Select language"
         >
@@ -53,7 +53,10 @@ export function LanguageSelector() {
                 key={loc}
                 role="option"
                 aria-selected={locale === loc}
-                onClick={() => { setLocale(loc); setShowMenu(false); }}
+                onClick={() => {
+                  setLocale(loc);
+                  setShowMenu(false);
+                }}
                 dir={rtl ? "rtl" : "ltr"}
                 className={`w-full text-left px-3 py-2 text-sm rounded flex items-center justify-between gap-2 ${
                   locale === loc
@@ -62,7 +65,9 @@ export function LanguageSelector() {
                 }`}
               >
                 <span>{info.native}</span>
-                <span className="text-xs text-muted-foreground">{info.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {info.label}
+                </span>
               </button>
             );
           })}

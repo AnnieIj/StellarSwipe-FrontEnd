@@ -11,10 +11,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { isTopOverlay } from "@/hooks/overlayManager";
 
 export type WalletConnectErrorReason =
   | "not_found"
   | "error"
+  | "timeout"
   | null;
 
 interface WalletConnectErrorModalProps {
@@ -49,6 +51,16 @@ const RECOVERY_STEPS: Record<
       "Try again — if the issue persists, reload the page",
     ],
   },
+  timeout: {
+    title: "Connection Timed Out",
+    description:
+      "Your wallet didn't respond within 20 seconds, so the request was cancelled.",
+    steps: [
+      "Check for a Freighter approval popup that may be hidden behind this window",
+      "Make sure Freighter is unlocked",
+      "Try connecting again — wait for the prompt to fully load",
+    ],
+  },
 };
 
 export function WalletConnectErrorModal({
@@ -62,11 +74,14 @@ export function WalletConnectErrorModal({
     initialFocus: '[data-autofocus="true"]',
   });
 
-  // ESC to close
+  // ESC to close only if this modal is the topmost overlay (prevents nested
+  // modals from closing their parents).
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      const el = focusTrapRef.current as HTMLElement | null;
+      if (isTopOverlay(el)) onClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -144,7 +159,10 @@ export function WalletConnectErrorModal({
               </p>
               <ol className="space-y-2">
                 {content.steps.map((step, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-sm text-foreground"
+                  >
                     <CheckCircle2
                       size={14}
                       className="mt-0.5 shrink-0 text-accent-primary"

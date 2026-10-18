@@ -1,0 +1,9 @@
+{
+  "common": {
+    "loading": "Cargando",
+    "error": "Error"
+  },
+  "header": {
+    "title": "StellarSwipe"
+  }
+}

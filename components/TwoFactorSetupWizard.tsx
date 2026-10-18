@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import {
   Shield,
   Smartphone,
@@ -29,6 +30,7 @@ import {
   isValidSixDigitCode,
   isValidPhoneNumber,
   maskPhoneNumber,
+  type BackupCode,
 } from "@/lib/twoFactorUtils";
 
 export type TwoFactorMethod = "app" | "sms";
@@ -70,10 +72,7 @@ const ORDERED_STEPS: Step[] = [
 function StepIndicator({ current, steps }: { current: Step; steps: Step[] }) {
   const index = steps.indexOf(current);
   return (
-    <ol
-      aria-label="Setup progress"
-      className="flex items-center gap-1"
-    >
+    <ol aria-label="Setup progress" className="flex items-center gap-1">
       {steps.map((step, i) => (
         <li key={step} className="flex items-center gap-1">
           <span
@@ -112,7 +111,11 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       aria-label={copied ? "Copied" : label}
       className="ml-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-foreground-muted hover:text-foreground transition-colors"
     >
-      {copied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
+      {copied ? (
+        <Check size={11} className="text-green-500" />
+      ) : (
+        <Copy size={11} />
+      )}
       {copied ? "Copied" : "Copy"}
     </button>
   );
@@ -139,8 +142,22 @@ export function TwoFactorSetupWizard({
 
   const steps: Step[] =
     method === "app"
-      ? ["intro", "choose-method", "setup-app", "verify", "backup-codes", "done"]
-      : ["intro", "choose-method", "setup-sms", "verify", "backup-codes", "done"];
+      ? [
+          "intro",
+          "choose-method",
+          "setup-app",
+          "verify",
+          "backup-codes",
+          "done",
+        ]
+      : [
+          "intro",
+          "choose-method",
+          "setup-sms",
+          "verify",
+          "backup-codes",
+          "done",
+        ];
 
   function goNext() {
     const idx = steps.indexOf(step);
@@ -183,7 +200,11 @@ export function TwoFactorSetupWizard({
   }
 
   return (
-    <div className="space-y-4" role="region" aria-label="Two-factor authentication setup">
+    <div
+      className="space-y-4"
+      role="region"
+      aria-label="Two-factor authentication setup"
+    >
       {/* Step indicator */}
       <div className="flex items-center justify-between">
         <StepIndicator current={step} steps={steps} />
@@ -205,9 +226,9 @@ export function TwoFactorSetupWizard({
           </CardHeader>
           <CardContent className="px-5 pb-5 space-y-4">
             <p className="text-sm text-foreground-muted">
-              Two-factor authentication adds an extra layer of security to your account.
-              In addition to your password, you&apos;ll need to enter a code from your phone
-              each time you sign in.
+              Two-factor authentication adds an extra layer of security to your
+              account. In addition to your password, you&apos;ll need to enter a
+              code from your phone each time you sign in.
             </p>
             <ul className="space-y-2 text-sm text-foreground-muted">
               {[
@@ -216,14 +237,17 @@ export function TwoFactorSetupWizard({
                 "SMS backup option available for account recovery",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
-                  <CheckCircle size={13} className="mt-0.5 shrink-0 text-green-400" />
+                  <CheckCircle
+                    size={13}
+                    className="mt-0.5 shrink-0 text-green-400"
+                  />
                   {item}
                 </li>
               ))}
             </ul>
             <div className="flex gap-2 pt-1">
               <Button size="sm" onClick={goNext} className="gap-1.5">
-                Get started <ChevronRight size={13} />
+                Get started <ChevronRight size={13} className="rtl-flip" />
               </Button>
               {onCancel && (
                 <Button size="sm" variant="ghost" onClick={onCancel}>
@@ -259,18 +283,27 @@ export function TwoFactorSetupWizard({
             >
               <Smartphone
                 size={18}
-                className={method === "app" ? "text-blue-400 mt-0.5" : "text-foreground-muted mt-0.5"}
+                className={
+                  method === "app"
+                    ? "text-blue-400 mt-0.5"
+                    : "text-foreground-muted mt-0.5"
+                }
                 aria-hidden="true"
               />
               <div>
-                <p className="text-sm font-medium text-foreground">Authenticator App</p>
+                <p className="text-sm font-medium text-foreground">
+                  Authenticator App
+                </p>
                 <p className="text-xs text-foreground-muted mt-0.5">
                   Use Google Authenticator, Authy, or any TOTP-compatible app.
                   Most secure option.
                 </p>
               </div>
               {method === "app" && (
-                <Check size={14} className="ml-auto mt-0.5 text-blue-400 shrink-0" />
+                <Check
+                  size={14}
+                  className="ml-auto mt-0.5 text-blue-400 shrink-0"
+                />
               )}
             </button>
 
@@ -286,26 +319,41 @@ export function TwoFactorSetupWizard({
             >
               <MessageSquare
                 size={18}
-                className={method === "sms" ? "text-blue-400 mt-0.5" : "text-foreground-muted mt-0.5"}
+                className={
+                  method === "sms"
+                    ? "text-blue-400 mt-0.5"
+                    : "text-foreground-muted mt-0.5"
+                }
                 aria-hidden="true"
               />
               <div>
-                <p className="text-sm font-medium text-foreground">SMS Backup</p>
+                <p className="text-sm font-medium text-foreground">
+                  SMS Backup
+                </p>
                 <p className="text-xs text-foreground-muted mt-0.5">
-                  Receive a code via text message. Use as a backup recovery option.
+                  Receive a code via text message. Use as a backup recovery
+                  option.
                 </p>
               </div>
               {method === "sms" && (
-                <Check size={14} className="ml-auto mt-0.5 text-blue-400 shrink-0" />
+                <Check
+                  size={14}
+                  className="ml-auto mt-0.5 text-blue-400 shrink-0"
+                />
               )}
             </button>
 
             <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={goBack} className="gap-1">
-                <ChevronLeft size={13} /> Back
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goBack}
+                className="gap-1"
+              >
+                <ChevronLeft size={13} className="rtl-flip" /> Back
               </Button>
               <Button size="sm" onClick={goNext} className="gap-1.5">
-                Continue <ChevronRight size={13} />
+                Continue <ChevronRight size={13} className="rtl-flip" />
               </Button>
             </div>
           </CardContent>
@@ -318,7 +366,9 @@ export function TwoFactorSetupWizard({
           <CardHeader>
             <div className="flex items-center gap-2">
               <QrCode size={16} className="text-blue-400" aria-hidden="true" />
-              <h2 className="text-base font-semibold text-foreground">Scan QR Code</h2>
+              <h2 className="text-base font-semibold text-foreground">
+                Scan QR Code
+              </h2>
             </div>
             <p className="text-xs text-foreground-muted">
               Open your authenticator app and scan the QR code below.
@@ -331,13 +381,14 @@ export function TwoFactorSetupWizard({
               aria-label="QR code for authenticator app"
             >
               {!qrError ? (
-                <img
+                <Image
                   src={qrUrl}
                   alt="Scan this QR code with your authenticator app"
                   width={180}
                   height={180}
                   className="rounded-md border border-border bg-white p-2"
                   onError={() => setQrError(true)}
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-44 w-44 items-center justify-center rounded-md border border-border bg-card text-center text-xs text-foreground-muted p-3">
@@ -359,24 +410,32 @@ export function TwoFactorSetupWizard({
                 <CopyButton text={secret} label="Copy secret key" />
               </div>
               <p className="text-[11px] text-foreground-subtle">
-                Enter this key manually in your authenticator app under &ldquo;Enter a setup key.&rdquo;
+                Enter this key manually in your authenticator app under
+                &ldquo;Enter a setup key.&rdquo;
               </p>
             </div>
 
             {/* Instructions */}
             <ol className="space-y-1 text-xs text-foreground-muted list-decimal list-inside">
               <li>Open Google Authenticator, Authy, or another TOTP app</li>
-              <li>Tap the &ldquo;+&rdquo; or &ldquo;Add account&rdquo; button</li>
+              <li>
+                Tap the &ldquo;+&rdquo; or &ldquo;Add account&rdquo; button
+              </li>
               <li>Scan the QR code above, or enter the key manually</li>
               <li>A 6-digit code will appear — you&apos;ll verify it next</li>
             </ol>
 
             <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={goBack} className="gap-1">
-                <ChevronLeft size={13} /> Back
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goBack}
+                className="gap-1"
+              >
+                <ChevronLeft size={13} className="rtl-flip" /> Back
               </Button>
               <Button size="sm" onClick={goNext} className="gap-1.5">
-                I&apos;ve scanned it <ChevronRight size={13} />
+                I&apos;ve scanned it <ChevronRight size={13} className="rtl-flip" />
               </Button>
             </div>
           </CardContent>
@@ -388,8 +447,14 @@ export function TwoFactorSetupWizard({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <MessageSquare size={16} className="text-blue-400" aria-hidden="true" />
-              <h2 className="text-base font-semibold text-foreground">Add Phone Number</h2>
+              <MessageSquare
+                size={16}
+                className="text-blue-400"
+                aria-hidden="true"
+              />
+              <h2 className="text-base font-semibold text-foreground">
+                Add Phone Number
+              </h2>
             </div>
             <p className="text-xs text-foreground-muted">
               Enter your phone number to receive verification codes via SMS.
@@ -421,21 +486,31 @@ export function TwoFactorSetupWizard({
                 aria-invalid={!!phoneError}
               />
               {phoneError && (
-                <p id="phone-error" role="alert" className="text-xs text-red-500">
+                <p
+                  id="phone-error"
+                  role="alert"
+                  className="text-xs text-red-500"
+                >
                   {phoneError}
                 </p>
               )}
               <p className="text-[11px] text-foreground-subtle">
-                Include country code (e.g. +1 for US). Standard messaging rates may apply.
+                Include country code (e.g. +1 for US). Standard messaging rates
+                may apply.
               </p>
             </div>
 
             <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={goBack} className="gap-1">
-                <ChevronLeft size={13} /> Back
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goBack}
+                className="gap-1"
+              >
+                <ChevronLeft size={13} className="rtl-flip" /> Back
               </Button>
               <Button size="sm" onClick={handlePhoneNext} className="gap-1.5">
-                Send code <ChevronRight size={13} />
+                Send code <ChevronRight size={13} className="rtl-flip" />
               </Button>
             </div>
           </CardContent>
@@ -452,7 +527,9 @@ export function TwoFactorSetupWizard({
             <p className="text-xs text-foreground-muted">
               {method === "app"
                 ? "Enter the 6-digit code shown in your authenticator app."
-                : `Enter the 6-digit code sent to ${maskPhoneNumber(phoneNumber)}.`}
+                : `Enter the 6-digit code sent to ${maskPhoneNumber(
+                    phoneNumber
+                  )}.`}
             </p>
           </CardHeader>
           <CardContent className="px-5 pb-5 space-y-4">
@@ -470,7 +547,9 @@ export function TwoFactorSetupWizard({
                 maxLength={6}
                 value={verificationCode}
                 onChange={(e) => {
-                  setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setVerificationCode(
+                    e.target.value.replace(/\D/g, "").slice(0, 6)
+                  );
                   if (verificationError) setVerificationError("");
                 }}
                 placeholder="000000"
@@ -479,22 +558,34 @@ export function TwoFactorSetupWizard({
                   "w-40 rounded-md border bg-background px-3 py-2 text-center font-mono text-lg tracking-widest text-foreground focus:outline-none focus:ring-2 focus:ring-ring",
                   verificationError ? "border-red-500" : "border-border"
                 )}
-                aria-describedby={verificationError ? "verify-error" : undefined}
+                aria-describedby={
+                  verificationError ? "verify-error" : undefined
+                }
                 aria-invalid={!!verificationError}
               />
               {verificationError && (
-                <p id="verify-error" role="alert" className="text-xs text-red-500">
+                <p
+                  id="verify-error"
+                  role="alert"
+                  className="text-xs text-red-500"
+                >
                   {verificationError}
                 </p>
               )}
               <p className="text-[11px] text-foreground-subtle">
-                Codes refresh every 30 seconds. Do not share this code with anyone.
+                Codes refresh every 30 seconds. Do not share this code with
+                anyone.
               </p>
             </div>
 
             <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={goBack} className="gap-1">
-                <ChevronLeft size={13} /> Back
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goBack}
+                className="gap-1"
+              >
+                <ChevronLeft size={13} className="rtl-flip" /> Back
               </Button>
               <Button
                 size="sm"
@@ -502,7 +593,7 @@ export function TwoFactorSetupWizard({
                 disabled={verificationCode.length < 6}
                 className="gap-1.5"
               >
-                Verify <ChevronRight size={13} />
+                Verify <ChevronRight size={13} className="rtl-flip" />
               </Button>
             </div>
           </CardContent>
@@ -513,9 +604,12 @@ export function TwoFactorSetupWizard({
       {step === "backup-codes" && (
         <Card>
           <CardHeader>
-            <h2 className="text-base font-semibold text-foreground">Save Backup Codes</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              Save Backup Codes
+            </h2>
             <p className="text-xs text-foreground-muted">
-              Store these codes somewhere safe. Each can be used once if you lose access to your authenticator.
+              Store these codes somewhere safe. Each can be used once if you
+              lose access to your authenticator.
             </p>
           </CardHeader>
           <CardContent className="px-5 pb-5 space-y-4">
@@ -526,45 +620,78 @@ export function TwoFactorSetupWizard({
               >
                 {backupCodes.map((code, i) => (
                   <li
-                    key={code}
-                    className="font-mono text-xs text-foreground flex items-center gap-1.5"
+                    key={code.value}
+                    className={cn(
+                      "font-mono text-xs flex items-center gap-1.5",
+                      code.consumed
+                        ? "line-through text-foreground-subtle"
+                        : "text-foreground"
+                    )}
+                    aria-label={`Code ${i + 1}: ${code.value}${
+                      code.consumed ? ", already used" : ""
+                    }`}
                   >
                     <span className="text-foreground-subtle w-4 text-right shrink-0">
                       {String(i + 1).padStart(2, "0")}.
                     </span>
-                    {code}
+                    {code.value}
+                    {code.consumed && (
+                      <span className="ml-1 text-[10px] text-foreground-subtle not-italic">
+                        (used)
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleDownloadBackupCodes}
-              className="gap-1.5 w-full"
-              aria-label="Download backup codes as text file"
-            >
-              <Download size={13} aria-hidden="true" />
-              {backupDownloaded ? "Downloaded ✓" : "Download backup codes (.txt)"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleDownloadBackupCodes}
+                className="gap-1.5 flex-1"
+                aria-label="Download backup codes as text file"
+              >
+                <Download size={13} aria-hidden="true" />
+                {backupDownloaded ? "Downloaded ✓" : "Download (.txt)"}
+              </Button>
+              <CopyButton
+                text={backupCodes
+                  .map(
+                    (c, i) => `${String(i + 1).padStart(2, "0")}. ${c.value}`
+                  )
+                  .join("\n")}
+                label="Copy all backup codes"
+              />
+            </div>
 
             <div
               role="note"
               className="flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-foreground-muted"
             >
-              <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-400" aria-hidden="true" />
+              <AlertTriangle
+                size={13}
+                className="mt-0.5 shrink-0 text-amber-400"
+                aria-hidden="true"
+              />
               <span>
-                These codes will not be shown again. Download or write them down before continuing.
+                These codes will not be shown again. Download or write them down
+                before continuing.
               </span>
             </div>
 
             <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={goBack} className="gap-1">
-                <ChevronLeft size={13} /> Back
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goBack}
+                className="gap-1"
+              >
+                <ChevronLeft size={13} className="rtl-flip" /> Back
               </Button>
               <Button size="sm" onClick={goNext} className="gap-1.5">
-                I&apos;ve saved my codes <ChevronRight size={13} />
+                I&apos;ve saved my codes <ChevronRight size={13} className="rtl-flip" />
               </Button>
             </div>
           </CardContent>
@@ -596,11 +723,18 @@ export function TwoFactorSetupWizard({
               aria-label="Session timeout reminder"
               className="w-full flex gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 text-xs text-left text-foreground-muted"
             >
-              <Shield size={13} className="mt-0.5 shrink-0 text-blue-400" aria-hidden="true" />
+              <Shield
+                size={13}
+                className="mt-0.5 shrink-0 text-blue-400"
+                aria-hidden="true"
+              />
               <span>
-                <span className="font-medium text-foreground">Session reminder: </span>
-                For your security, sessions expire after 30 minutes of inactivity when 2FA is enabled.
-                You&apos;ll be asked to re-authenticate with your 2FA code on the next sign-in.
+                <span className="font-medium text-foreground">
+                  Session reminder:{" "}
+                </span>
+                For your security, sessions expire after 30 minutes of
+                inactivity when 2FA is enabled. You&apos;ll be asked to
+                re-authenticate with your 2FA code on the next sign-in.
               </span>
             </div>
 

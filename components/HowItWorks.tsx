@@ -1,34 +1,48 @@
 "use client";
 
 import { Wallet, Users, Zap } from "lucide-react";
-import { motion } from "framer-motion";
-import { fadeUpVariants, useScrollViewport } from "@/hooks/useScrollAnimation";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  fadeUpVariants,
+  fadeUpVariantsReduced,
+  useScrollViewport,
+} from "@/hooks/useScrollAnimation";
 
 const steps = [
   {
     icon: Wallet,
     title: "Connect Wallet",
-    description: "Link your Freighter wallet in one click. No sign-up, no custody — you stay in control.",
+    description:
+      "Link your Freighter wallet in one click. No sign-up, no custody — you stay in control.",
   },
   {
     icon: Users,
     title: "Follow Providers",
-    description: "Browse verified signal providers ranked by performance and follow the ones you trust.",
+    description:
+      "Browse verified signal providers ranked by performance and follow the ones you trust.",
   },
   {
     icon: Zap,
     title: "Swipe to Trade",
-    description: "Review live signals and execute trades directly on the Stellar SDEX with a single swipe.",
+    description:
+      "Review live signals and execute trades directly on the Stellar SDEX with a single swipe.",
   },
 ];
 
 export function HowItWorks() {
   const scrollProps = useScrollViewport();
+  const prefersReduced = useReducedMotion();
+  const variants = prefersReduced ? fadeUpVariantsReduced : fadeUpVariants;
   return (
     <section className="w-full py-16 px-6" aria-labelledby="how-heading">
       <div className="mx-auto max-w-4xl text-center mb-12">
-        <p className="text-xs uppercase tracking-widest text-sky-400 mb-2">How it works</p>
-        <h2 id="how-heading" className="text-3xl font-bold text-white tracking-tight">
+        <p className="text-xs uppercase tracking-widest text-sky-400 mb-2">
+          How it works
+        </p>
+        <h2
+          id="how-heading"
+          className="text-3xl font-bold text-white tracking-tight"
+        >
           Three steps to master the SDEX
         </h2>
       </div>
@@ -47,7 +61,7 @@ export function HowItWorks() {
               <motion.div
                 key={step.title}
                 custom={i}
-                variants={fadeUpVariants}
+                variants={variants}
                 {...scrollProps}
                 className="flex flex-col items-center text-center gap-4"
               >
@@ -58,7 +72,9 @@ export function HowItWorks() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white">{step.title}</h3>
+                  <h3 className="text-base font-semibold text-white">
+                    {step.title}
+                  </h3>
                   <p className="mt-1 text-sm text-slate-400 leading-relaxed max-w-xs mx-auto">
                     {step.description}
                   </p>

@@ -5,8 +5,18 @@ import { ShieldCheck, Lock, FileCheck2, Activity } from "lucide-react";
 
 const METRICS = [
   { label: "Total Value Locked", value: "$4.2M", sub: "across active vaults" },
-  { label: "Audit Status", value: "Passed", sub: "OtterSec · March 2025", highlight: true },
-  { label: "Contract Status", value: "Live", sub: "Soroban Testnet", highlight: true },
+  {
+    label: "Audit Status",
+    value: "Passed",
+    sub: "OtterSec · March 2025",
+    highlight: true,
+  },
+  {
+    label: "Contract Status",
+    value: "Live",
+    sub: "Soroban Testnet",
+    highlight: true,
+  },
   { label: "On-chain Signals", value: "12,840", sub: "verified executions" },
 ];
 
@@ -45,11 +55,14 @@ export function SecurityMetrics() {
               <ShieldCheck size={14} /> Security First
             </span>
             <h2 className="text-3xl font-bold tracking-tight">
-              Built on trust,<br />verified on-chain.
+              Built on trust,
+              <br />
+              verified on-chain.
             </h2>
             <p className="mt-3 text-muted-foreground text-sm leading-relaxed">
               StellarSwipe is a fully non-custodial protocol. No intermediaries,
-              no hidden custody — every action is provable on the Stellar ledger.
+              no hidden custody — every action is provable on the Stellar
+              ledger.
             </p>
           </div>
 

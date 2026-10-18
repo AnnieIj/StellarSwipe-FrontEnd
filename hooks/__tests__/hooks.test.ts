@@ -10,7 +10,10 @@
 
 // ── useStopLoss — derived price calculation ──────────────────────────────────
 
-function computeStopLossPrice(entryPrice: number, stopLossPercent: number): number {
+function computeStopLossPrice(
+  entryPrice: number,
+  stopLossPercent: number
+): number {
   return entryPrice * (1 - stopLossPercent / 100);
 }
 
@@ -32,13 +35,14 @@ describe("useStopLoss – stop-loss price derivation", () => {
   });
 
   it("handles fractional entry prices correctly", () => {
-    expect(computeStopLossPrice(0.5310, 5)).toBeCloseTo(0.5310 * 0.95);
+    expect(computeStopLossPrice(0.531, 5)).toBeCloseTo(0.531 * 0.95);
   });
 
   it("returns null placeholder when no entryPrice provided", () => {
     // Mirrors the hook branch: entryPrice != null ? … : null
     const entryPrice: number | undefined = undefined;
-    const result = entryPrice != null ? computeStopLossPrice(entryPrice, 5) : null;
+    const result =
+      entryPrice != null ? computeStopLossPrice(entryPrice, 5) : null;
     expect(result).toBeNull();
   });
 
@@ -89,6 +93,7 @@ import type { TradeRequest } from "@/services/tradeExecutionService";
 
 const MOCK_REQUEST: TradeRequest = {
   id: "req-1",
+  userId: "user-1",
   signalId: "sig-1",
   asset: "XLM",
   direction: "BUY",
@@ -99,7 +104,8 @@ const MOCK_REQUEST: TradeRequest = {
 describe("useTradeExecution – service contract", () => {
   const mockEnqueue = tradeExecutionService.enqueue as jest.Mock;
   const mockGetEstimate = tradeExecutionService.getEstimate as jest.Mock;
-  const mockGetExchangeRate = tradeExecutionService.getExchangeRate as jest.Mock;
+  const mockGetExchangeRate =
+    tradeExecutionService.getExchangeRate as jest.Mock;
   const mockGetBalance = tradeExecutionService.getBalance as jest.Mock;
 
   beforeEach(() => {
@@ -123,7 +129,12 @@ describe("useTradeExecution – service contract", () => {
   });
 
   it("a successful enqueue resolves with success=true and a txHash", async () => {
-    const result = { id: "req-1", success: true, txHash: "0xabc", executionTimeMs: 320 };
+    const result = {
+      id: "req-1",
+      success: true,
+      txHash: "0xabc",
+      executionTimeMs: 320,
+    };
     mockEnqueue.mockResolvedValueOnce(result);
     const out = await tradeExecutionService.enqueue(MOCK_REQUEST);
     expect(out.success).toBe(true);
@@ -131,7 +142,12 @@ describe("useTradeExecution – service contract", () => {
   });
 
   it("a failed enqueue resolves with success=false and an error message", async () => {
-    const result = { id: "req-1", success: false, executionTimeMs: 100, error: "Insufficient balance" };
+    const result = {
+      id: "req-1",
+      success: false,
+      executionTimeMs: 100,
+      error: "Insufficient balance",
+    };
     mockEnqueue.mockResolvedValueOnce(result);
     const out = await tradeExecutionService.enqueue(MOCK_REQUEST);
     expect(out.success).toBe(false);
@@ -153,7 +169,9 @@ describe("useTradeExecution – service contract", () => {
   it("live slippage is computed from the rate delta", () => {
     const rate = 0.502;
     const slippageTolerance = 0.5;
-    const slippage = parseFloat((Math.abs(rate - slippageTolerance) * 100).toFixed(2));
+    const slippage = parseFloat(
+      (Math.abs(rate - slippageTolerance) * 100).toFixed(2)
+    );
     expect(slippage).toBeCloseTo(0.2);
   });
 });
@@ -188,10 +206,10 @@ function totalUnrealizedPnL(assets: PortfolioAssetInput[]) {
 }
 
 const DEMO_ASSETS: PortfolioAssetInput[] = [
-  { symbol: "XLM",  value: 1500, realizedPnL: 120,  unrealizedPnL: 85 },
-  { symbol: "USDC", value: 800,  realizedPnL: 45,   unrealizedPnL: 12 },
-  { symbol: "AQUA", value: 350,  realizedPnL: -20,  unrealizedPnL: 28 },
-  { symbol: "yXLM", value: 200,  realizedPnL: 60,   unrealizedPnL: 35 },
+  { symbol: "XLM", value: 1500, realizedPnL: 120, unrealizedPnL: 85 },
+  { symbol: "USDC", value: 800, realizedPnL: 45, unrealizedPnL: 12 },
+  { symbol: "AQUA", value: 350, realizedPnL: -20, unrealizedPnL: 28 },
+  { symbol: "yXLM", value: 200, realizedPnL: 60, unrealizedPnL: 35 },
 ];
 
 describe("usePortfolio – portfolio summary derivation", () => {

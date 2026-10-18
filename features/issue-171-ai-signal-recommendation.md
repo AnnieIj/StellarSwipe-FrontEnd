@@ -17,9 +17,9 @@ Maps implemented features to acceptance criteria.
 
 ## Files
 
-| File | Role |
-|------|------|
-| `store/useRecommendationStore.ts` | Persisted state: settings, feedback, recommendations, accuracy |
-| `services/recommendationEngine.ts` | Scoring algorithm |
-| `components/SignalRecommendations.tsx` | Feed-header recommendations UI |
-| `components/RecommendationSettings.tsx` | Settings + privacy + accuracy panel |
+| File                                    | Role                                                           |
+| --------------------------------------- | -------------------------------------------------------------- |
+| `store/useRecommendationStore.ts`       | Persisted state: settings, feedback, recommendations, accuracy |
+| `services/recommendationEngine.ts`      | Scoring algorithm                                              |
+| `components/SignalRecommendations.tsx`  | Feed-header recommendations UI                                 |
+| `components/RecommendationSettings.tsx` | Settings + privacy + accuracy panel                            |

@@ -40,7 +40,8 @@ export function useSyncStatus(isFetching: boolean): SyncStatus {
     ? "offline"
     : isFetching
     ? "syncing"
-    : lastSyncedAt !== null && Date.now() - lastSyncedAt.getTime() > STALE_THRESHOLD_MS
+    : lastSyncedAt !== null &&
+      Date.now() - lastSyncedAt.getTime() > STALE_THRESHOLD_MS
     ? "stale"
     : "synced";
 

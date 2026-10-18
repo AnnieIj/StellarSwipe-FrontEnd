@@ -20,7 +20,9 @@ export function useRouteLoadTracking(): void {
     prevPathRef.current = pathname;
 
     const reportLoad = () => {
-      const loadTimeMs = Math.round(performance.now() - navigationStartRef.current);
+      const loadTimeMs = Math.round(
+        performance.now() - navigationStartRef.current
+      );
       recordRouteLoad(pathname, loadTimeMs);
     };
 

@@ -1,0 +1,164 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import {
+  useSignalFilterStore,
+  type FeedSortOrder,
+  type FilterDirection,
+} from "@/store/useSignalFilterStore";
+
+/** URL parameter names owned by the signal feed filters. */
+export const FILTER_PARAMS = {
+  direction: "dir",
+  asset: "asset",
+  provider: "q",
+  bookmarkedOnly: "saved",
+  followedOnly: "followed",
+  sortOrder: "sort",
+} as const;
+
+const DIRECTIONS: FilterDirection[] = ["ALL", "BUY", "SELL"];
+const SORT_ORDERS: FeedSortOrder[] = [
+  "latest",
+  "hot",
+  "relevant",
+  "confidence",
+];
+
+type FilterValues = {
+  direction: FilterDirection;
+  asset: string;
+  provider: string;
+  bookmarkedOnly: boolean;
+  followedOnly: boolean;
+  sortOrder: FeedSortOrder;
+};
+
+const DEFAULTS: FilterValues = {
+  direction: "ALL",
+  asset: "",
+  provider: "",
+  bookmarkedOnly: false,
+  followedOnly: false,
+  sortOrder: "latest",
+};
+
+/** Parses supported filters from a query string, ignoring invalid values. */
+export function parseFilterParams(search: string): FilterValues {
+  const params = new URLSearchParams(search);
+  const dir = params.get(FILTER_PARAMS.direction)?.toUpperCase();
+  const sort = params.get(FILTER_PARAMS.sortOrder);
+  return {
+    direction: DIRECTIONS.includes(dir as FilterDirection)
+      ? (dir as FilterDirection)
+      : DEFAULTS.direction,
+    asset: params.get(FILTER_PARAMS.asset) ?? DEFAULTS.asset,
+    provider: params.get(FILTER_PARAMS.provider) ?? DEFAULTS.provider,
+    bookmarkedOnly: params.get(FILTER_PARAMS.bookmarkedOnly) === "1",
+    followedOnly: params.get(FILTER_PARAMS.followedOnly) === "1",
+    sortOrder: SORT_ORDERS.includes(sort as FeedSortOrder)
+      ? (sort as FeedSortOrder)
+      : DEFAULTS.sortOrder,
+  };
+}
+
+/**
+ * Writes filters into `search`, touching only filter-owned parameters and
+ * omitting defaults so URLs stay short and readable.
+ */
+export function serializeFilterParams(
+  search: string,
+  values: FilterValues
+): string {
+  const params = new URLSearchParams(search);
+  (Object.keys(FILTER_PARAMS) as (keyof FilterValues)[]).forEach((key) => {
+    const name = FILTER_PARAMS[key];
+    const value = values[key];
+    if (value === DEFAULTS[key]) {
+      params.delete(name);
+    } else {
+      params.set(
+        name,
+        typeof value === "boolean"
+          ? "1"
+          : key === "direction"
+            ? String(value).toLowerCase()
+            : String(value)
+      );
+    }
+  });
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+function pickFilters(state: FilterValues): FilterValues {
+  const { direction, asset, provider, bookmarkedOnly, followedOnly, sortOrder } =
+    state;
+  return { direction, asset, provider, bookmarkedOnly, followedOnly, sortOrder };
+}
+
+/**
+ * Two-way sync between the signal filter store and the page URL so filtered
+ * views can be shared, refreshed and navigated with back/forward.
+ *
+ * - On mount, filters present in the URL override persisted filters.
+ * - Discrete filter changes push a history entry; free-text changes replace
+ *   the current entry so typing doesn't flood the history stack.
+ * - popstate re-applies filters from the URL.
+ */
+export function useFilterUrlSync() {
+  const applyingFromUrl = useRef(false);
+
+  useEffect(() => {
+    const applyFromUrl = () => {
+      applyingFromUrl.current = true;
+      useSignalFilterStore.setState(parseFilterParams(window.location.search));
+      applyingFromUrl.current = false;
+    };
+
+    const hasFilterParams = Object.values(FILTER_PARAMS).some((name) =>
+      new URLSearchParams(window.location.search).has(name)
+    );
+    if (hasFilterParams) {
+      applyFromUrl();
+    } else {
+      // Reflect persisted filters in the URL without adding a history entry.
+      const next = serializeFilterParams(
+        window.location.search,
+        pickFilters(useSignalFilterStore.getState())
+      );
+      if (next !== window.location.search) {
+        window.history.replaceState(
+          window.history.state,
+          "",
+          `${window.location.pathname}${next}${window.location.hash}`
+        );
+      }
+    }
+
+    const unsubscribe = useSignalFilterStore.subscribe((state, prev) => {
+      if (applyingFromUrl.current) return;
+      const next = serializeFilterParams(
+        window.location.search,
+        pickFilters(state)
+      );
+      if (next === window.location.search) return;
+      const url = `${window.location.pathname}${next}${window.location.hash}`;
+      const textOnly =
+        state.direction === prev.direction &&
+        state.bookmarkedOnly === prev.bookmarkedOnly &&
+        state.sortOrder === prev.sortOrder;
+      if (textOnly) {
+        window.history.replaceState(window.history.state, "", url);
+      } else {
+        window.history.pushState(window.history.state, "", url);
+      }
+    });
+
+    window.addEventListener("popstate", applyFromUrl);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("popstate", applyFromUrl);
+    };
+  }, []);
+}

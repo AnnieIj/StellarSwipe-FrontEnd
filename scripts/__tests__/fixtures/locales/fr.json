@@ -1,0 +1,14 @@
+{
+  "common": {
+    "loading": "Chargement",
+    "error": "Erreur",
+    "close": "Fermer"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "Tableau de bord"
+  },
+  "signals": {
+    "buy_signal": "Signal d'achat"
+  }
+}

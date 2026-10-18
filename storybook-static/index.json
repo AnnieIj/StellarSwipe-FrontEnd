@@ -1,0 +1,896 @@
+{
+  "v": 5,
+  "entries": {
+    "ui-button--docs": {
+      "id": "ui-button--docs",
+      "title": "UI/Button",
+      "name": "Docs",
+      "importPath": "./stories/Button.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-button--default": {
+      "type": "story",
+      "id": "ui-button--default",
+      "name": "Default",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--destructive": {
+      "type": "story",
+      "id": "ui-button--destructive",
+      "name": "Destructive",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--outline": {
+      "type": "story",
+      "id": "ui-button--outline",
+      "name": "Outline",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--secondary": {
+      "type": "story",
+      "id": "ui-button--secondary",
+      "name": "Secondary",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--ghost": {
+      "type": "story",
+      "id": "ui-button--ghost",
+      "name": "Ghost",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--link": {
+      "type": "story",
+      "id": "ui-button--link",
+      "name": "Link",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--small": {
+      "type": "story",
+      "id": "ui-button--small",
+      "name": "Small",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--large": {
+      "type": "story",
+      "id": "ui-button--large",
+      "name": "Large",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--disabled": {
+      "type": "story",
+      "id": "ui-button--disabled",
+      "name": "Disabled",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-button--all-variants": {
+      "type": "story",
+      "id": "ui-button--all-variants",
+      "name": "All Variants",
+      "title": "UI/Button",
+      "importPath": "./stories/Button.stories.tsx",
+      "componentPath": "./components/ui/button.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-card--docs": {
+      "id": "ui-card--docs",
+      "title": "UI/Card",
+      "name": "Docs",
+      "importPath": "./stories/Card.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-card--default": {
+      "type": "story",
+      "id": "ui-card--default",
+      "name": "Default",
+      "title": "UI/Card",
+      "importPath": "./stories/Card.stories.tsx",
+      "componentPath": "./components/ui/card.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-card--with-data": {
+      "type": "story",
+      "id": "ui-card--with-data",
+      "name": "With Data",
+      "title": "UI/Card",
+      "importPath": "./stories/Card.stories.tsx",
+      "componentPath": "./components/ui/card.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-card--empty": {
+      "type": "story",
+      "id": "ui-card--empty",
+      "name": "Empty",
+      "title": "UI/Card",
+      "importPath": "./stories/Card.stories.tsx",
+      "componentPath": "./components/ui/card.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-copyfield--docs": {
+      "id": "ui-copyfield--docs",
+      "title": "UI/CopyField",
+      "name": "Docs",
+      "importPath": "./stories/CopyField.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-copyfield--wallet-address": {
+      "type": "story",
+      "id": "ui-copyfield--wallet-address",
+      "name": "Wallet Address",
+      "title": "UI/CopyField",
+      "importPath": "./stories/CopyField.stories.tsx",
+      "componentPath": "./components/ui/copy-field.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-copyfield--transaction-hash": {
+      "type": "story",
+      "id": "ui-copyfield--transaction-hash",
+      "name": "Transaction Hash",
+      "title": "UI/CopyField",
+      "importPath": "./stories/CopyField.stories.tsx",
+      "componentPath": "./components/ui/copy-field.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-copyfield--full-value": {
+      "type": "story",
+      "id": "ui-copyfield--full-value",
+      "name": "Full Value",
+      "title": "UI/CopyField",
+      "importPath": "./stories/CopyField.stories.tsx",
+      "componentPath": "./components/ui/copy-field.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-copyfield--no-label": {
+      "type": "story",
+      "id": "ui-copyfield--no-label",
+      "name": "No Label",
+      "title": "UI/CopyField",
+      "importPath": "./stories/CopyField.stories.tsx",
+      "componentPath": "./components/ui/copy-field.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-copyfield--short-value": {
+      "type": "story",
+      "id": "ui-copyfield--short-value",
+      "name": "Short Value",
+      "title": "UI/CopyField",
+      "importPath": "./stories/CopyField.stories.tsx",
+      "componentPath": "./components/ui/copy-field.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-emptystate--docs": {
+      "id": "ui-emptystate--docs",
+      "title": "UI/EmptyState",
+      "name": "Docs",
+      "importPath": "./stories/EmptyState.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-emptystate--no-data": {
+      "type": "story",
+      "id": "ui-emptystate--no-data",
+      "name": "No Data",
+      "title": "UI/EmptyState",
+      "importPath": "./stories/EmptyState.stories.tsx",
+      "componentPath": "./components/ui/empty-state.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-emptystate--no-results": {
+      "type": "story",
+      "id": "ui-emptystate--no-results",
+      "name": "No Results",
+      "title": "UI/EmptyState",
+      "importPath": "./stories/EmptyState.stories.tsx",
+      "componentPath": "./components/ui/empty-state.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-emptystate--error-adjacent": {
+      "type": "story",
+      "id": "ui-emptystate--error-adjacent",
+      "name": "Error Adjacent",
+      "title": "UI/EmptyState",
+      "importPath": "./stories/EmptyState.stories.tsx",
+      "componentPath": "./components/ui/empty-state.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--docs": {
+      "id": "ui-glossaryterm--docs",
+      "title": "UI/GlossaryTerm",
+      "name": "Docs",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-glossaryterm--slippage": {
+      "type": "story",
+      "id": "ui-glossaryterm--slippage",
+      "name": "Slippage",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--stop-loss": {
+      "type": "story",
+      "id": "ui-glossaryterm--stop-loss",
+      "name": "Stop Loss",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--trustline": {
+      "type": "story",
+      "id": "ui-glossaryterm--trustline",
+      "name": "Trustline",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--soroban": {
+      "type": "story",
+      "id": "ui-glossaryterm--soroban",
+      "name": "Soroban",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--unknown-term": {
+      "type": "story",
+      "id": "ui-glossaryterm--unknown-term",
+      "name": "Unknown Term",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--in-paragraph": {
+      "type": "story",
+      "id": "ui-glossaryterm--in-paragraph",
+      "name": "In Paragraph",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-glossaryterm--all-terms": {
+      "type": "story",
+      "id": "ui-glossaryterm--all-terms",
+      "name": "All Terms",
+      "title": "UI/GlossaryTerm",
+      "importPath": "./stories/GlossaryTerm.stories.tsx",
+      "componentPath": "./components/GlossaryTerm.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--docs": {
+      "id": "components-leaderboard--docs",
+      "title": "Components/Leaderboard",
+      "name": "Docs",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "components-leaderboard--default": {
+      "type": "story",
+      "id": "components-leaderboard--default",
+      "name": "Default (4 traders)",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--default-dark": {
+      "type": "story",
+      "id": "components-leaderboard--default-dark",
+      "name": "Default – Dark",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--default-light": {
+      "type": "story",
+      "id": "components-leaderboard--default-light",
+      "name": "Default – Light",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--single-entry": {
+      "type": "story",
+      "id": "components-leaderboard--single-entry",
+      "name": "Single entry",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--with-anonymous-trader": {
+      "type": "story",
+      "id": "components-leaderboard--with-anonymous-trader",
+      "name": "Anonymous trader",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--loading": {
+      "type": "story",
+      "id": "components-leaderboard--loading",
+      "name": "Loading",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--loading-dark": {
+      "type": "story",
+      "id": "components-leaderboard--loading-dark",
+      "name": "Loading – Dark",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--fetch-error": {
+      "type": "story",
+      "id": "components-leaderboard--fetch-error",
+      "name": "Error state",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--fetch-error-dark": {
+      "type": "story",
+      "id": "components-leaderboard--fetch-error-dark",
+      "name": "Error state – Dark",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--empty": {
+      "type": "story",
+      "id": "components-leaderboard--empty",
+      "name": "Empty rankings",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-leaderboard--many-entries": {
+      "type": "story",
+      "id": "components-leaderboard--many-entries",
+      "name": "Many entries (6 traders)",
+      "title": "Components/Leaderboard",
+      "importPath": "./stories/Leaderboard.stories.tsx",
+      "componentPath": "./components/Leaderboard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--docs": {
+      "id": "components-portfoliosummarycards--docs",
+      "title": "Components/PortfolioSummaryCards",
+      "name": "Docs",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "components-portfoliosummarycards--profitable": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--profitable",
+      "name": "Profitable portfolio",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--profitable-light": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--profitable-light",
+      "name": "Profitable – Light",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--profitable-dark": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--profitable-dark",
+      "name": "Profitable – Dark",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--at-loss": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--at-loss",
+      "name": "Portfolio at loss",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--at-loss-light": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--at-loss-light",
+      "name": "Portfolio at loss – Light",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--at-loss-dark": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--at-loss-dark",
+      "name": "Portfolio at loss – Dark",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--break-even": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--break-even",
+      "name": "Break-even (zero P/L)",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--empty": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--empty",
+      "name": "Empty portfolio",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--empty-light": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--empty-light",
+      "name": "Empty portfolio – Light",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--empty-dark": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--empty-dark",
+      "name": "Empty portfolio – Dark",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--mixed-positions": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--mixed-positions",
+      "name": "Mixed positions (one closed)",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--large-balance": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--large-balance",
+      "name": "Large balance ($1M+)",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-portfoliosummarycards--single-asset": {
+      "type": "story",
+      "id": "components-portfoliosummarycards--single-asset",
+      "name": "Single asset",
+      "title": "Components/PortfolioSummaryCards",
+      "importPath": "./stories/PortfolioSummaryCards.stories.tsx",
+      "componentPath": "./components/PortfolioSummaryCards.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-scrolltotop--docs": {
+      "id": "ui-scrolltotop--docs",
+      "title": "UI/ScrollToTop",
+      "name": "Docs",
+      "importPath": "./stories/ScrollToTop.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-scrolltotop--default": {
+      "type": "story",
+      "id": "ui-scrolltotop--default",
+      "name": "Default",
+      "title": "UI/ScrollToTop",
+      "importPath": "./stories/ScrollToTop.stories.tsx",
+      "componentPath": "./components/ScrollToTop.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-scrolltotop--always-visible": {
+      "type": "story",
+      "id": "ui-scrolltotop--always-visible",
+      "name": "Always Visible",
+      "title": "UI/ScrollToTop",
+      "importPath": "./stories/ScrollToTop.stories.tsx",
+      "componentPath": "./components/ScrollToTop.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-scrolltotop--hidden": {
+      "type": "story",
+      "id": "ui-scrolltotop--hidden",
+      "name": "Hidden",
+      "title": "UI/ScrollToTop",
+      "importPath": "./stories/ScrollToTop.stories.tsx",
+      "componentPath": "./components/ScrollToTop.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "navigation-settingsbreadcrumb--docs": {
+      "id": "navigation-settingsbreadcrumb--docs",
+      "title": "Navigation/SettingsBreadcrumb",
+      "name": "Docs",
+      "importPath": "./stories/SettingsBreadcrumb.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "navigation-settingsbreadcrumb--two-levels": {
+      "type": "story",
+      "id": "navigation-settingsbreadcrumb--two-levels",
+      "name": "Two Levels",
+      "title": "Navigation/SettingsBreadcrumb",
+      "importPath": "./stories/SettingsBreadcrumb.stories.tsx",
+      "componentPath": "./components/SettingsBreadcrumb.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "navigation-settingsbreadcrumb--three-levels": {
+      "type": "story",
+      "id": "navigation-settingsbreadcrumb--three-levels",
+      "name": "Three Levels",
+      "title": "Navigation/SettingsBreadcrumb",
+      "importPath": "./stories/SettingsBreadcrumb.stories.tsx",
+      "componentPath": "./components/SettingsBreadcrumb.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "navigation-settingsbreadcrumb--four-levels": {
+      "type": "story",
+      "id": "navigation-settingsbreadcrumb--four-levels",
+      "name": "Four Levels",
+      "title": "Navigation/SettingsBreadcrumb",
+      "importPath": "./stories/SettingsBreadcrumb.stories.tsx",
+      "componentPath": "./components/SettingsBreadcrumb.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "navigation-settingsbreadcrumb--single-segment": {
+      "type": "story",
+      "id": "navigation-settingsbreadcrumb--single-segment",
+      "name": "Single Segment",
+      "title": "Navigation/SettingsBreadcrumb",
+      "importPath": "./stories/SettingsBreadcrumb.stories.tsx",
+      "componentPath": "./components/SettingsBreadcrumb.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--docs": {
+      "id": "components-signalcard--docs",
+      "title": "Components/SignalCard",
+      "name": "Docs",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "components-signalcard--default": {
+      "type": "story",
+      "id": "components-signalcard--default",
+      "name": "Default",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--sell-signal": {
+      "type": "story",
+      "id": "components-signalcard--sell-signal",
+      "name": "Sell Signal",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--bookmarked": {
+      "type": "story",
+      "id": "components-signalcard--bookmarked",
+      "name": "Bookmarked",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs", "play-fn"]
+    },
+    "components-signalcard--premium": {
+      "type": "story",
+      "id": "components-signalcard--premium",
+      "name": "Premium",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--premium-with-access": {
+      "type": "story",
+      "id": "components-signalcard--premium-with-access",
+      "name": "Premium With Access",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--with-stake-badge": {
+      "type": "story",
+      "id": "components-signalcard--with-stake-badge",
+      "name": "With Stake Badge",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--loading": {
+      "type": "story",
+      "id": "components-signalcard--loading",
+      "name": "Loading",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--expired": {
+      "type": "story",
+      "id": "components-signalcard--expired",
+      "name": "Expired",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--low-confidence": {
+      "type": "story",
+      "id": "components-signalcard--low-confidence",
+      "name": "Low Confidence",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "components-signalcard--high-confidence": {
+      "type": "story",
+      "id": "components-signalcard--high-confidence",
+      "name": "High Confidence",
+      "title": "Components/SignalCard",
+      "importPath": "./stories/SignalCard.stories.tsx",
+      "componentPath": "./components/SignalCard.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-stoplossslider--docs": {
+      "id": "ui-stoplossslider--docs",
+      "title": "UI/StopLossSlider",
+      "name": "Docs",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-stoplossslider--low-risk": {
+      "type": "story",
+      "id": "ui-stoplossslider--low-risk",
+      "name": "Low Risk",
+      "title": "UI/StopLossSlider",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "componentPath": "./components/ui/stop-loss-slider.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-stoplossslider--moderate-risk": {
+      "type": "story",
+      "id": "ui-stoplossslider--moderate-risk",
+      "name": "Moderate Risk",
+      "title": "UI/StopLossSlider",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "componentPath": "./components/ui/stop-loss-slider.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-stoplossslider--high-risk": {
+      "type": "story",
+      "id": "ui-stoplossslider--high-risk",
+      "name": "High Risk",
+      "title": "UI/StopLossSlider",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "componentPath": "./components/ui/stop-loss-slider.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-stoplossslider--no-stop-loss": {
+      "type": "story",
+      "id": "ui-stoplossslider--no-stop-loss",
+      "name": "No Stop Loss",
+      "title": "UI/StopLossSlider",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "componentPath": "./components/ui/stop-loss-slider.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-stoplossslider--disabled": {
+      "type": "story",
+      "id": "ui-stoplossslider--disabled",
+      "name": "Disabled",
+      "title": "UI/StopLossSlider",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "componentPath": "./components/ui/stop-loss-slider.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-stoplossslider--interactive": {
+      "type": "story",
+      "id": "ui-stoplossslider--interactive",
+      "name": "Interactive",
+      "title": "UI/StopLossSlider",
+      "importPath": "./stories/StopLossSlider.stories.tsx",
+      "componentPath": "./components/ui/stop-loss-slider.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-toast--docs": {
+      "id": "ui-toast--docs",
+      "title": "UI/Toast",
+      "name": "Docs",
+      "importPath": "./stories/Toast.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "ui-toast--success": {
+      "type": "story",
+      "id": "ui-toast--success",
+      "name": "Success",
+      "title": "UI/Toast",
+      "importPath": "./stories/Toast.stories.tsx",
+      "componentPath": "./components/ui/toast.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-toast--error": {
+      "type": "story",
+      "id": "ui-toast--error",
+      "name": "Error",
+      "title": "UI/Toast",
+      "importPath": "./stories/Toast.stories.tsx",
+      "componentPath": "./components/ui/toast.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-toast--info": {
+      "type": "story",
+      "id": "ui-toast--info",
+      "name": "Info",
+      "title": "UI/Toast",
+      "importPath": "./stories/Toast.stories.tsx",
+      "componentPath": "./components/ui/toast.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "ui-toast--all-tones": {
+      "type": "story",
+      "id": "ui-toast--all-tones",
+      "name": "All Tones",
+      "title": "UI/Toast",
+      "importPath": "./stories/Toast.stories.tsx",
+      "componentPath": "./components/ui/toast.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--docs": {
+      "id": "trade-tradeconfirmationmodal--docs",
+      "title": "Trade/TradeConfirmationModal",
+      "name": "Docs",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "type": "docs",
+      "tags": ["dev", "test", "autodocs"],
+      "storiesImports": []
+    },
+    "trade-tradeconfirmationmodal--market-order-light": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--market-order-light",
+      "name": "Market Order – Light",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--market-order-dark": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--market-order-dark",
+      "name": "Market Order – Dark",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--limit-order-light": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--limit-order-light",
+      "name": "Limit Order – Light",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--limit-order-dark": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--limit-order-dark",
+      "name": "Limit Order – Dark",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--market-order-submitting-light": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--market-order-submitting-light",
+      "name": "Market Order Submitting – Light",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--market-order-submitting-dark": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--market-order-submitting-dark",
+      "name": "Market Order Submitting – Dark",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    },
+    "trade-tradeconfirmationmodal--visual-regression-fee-alignment": {
+      "type": "story",
+      "id": "trade-tradeconfirmationmodal--visual-regression-fee-alignment",
+      "name": "[Visual Regression] Fee Row Misaligned",
+      "title": "Trade/TradeConfirmationModal",
+      "importPath": "./stories/TradeConfirmationModal.stories.tsx",
+      "componentPath": "./components/trade/TradeConfirmationModal.tsx",
+      "tags": ["dev", "test", "autodocs"]
+    }
+  }
+}

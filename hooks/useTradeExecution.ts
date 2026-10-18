@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
-import { tradeExecutionService, type TradeRequest, type TradeResult, type ExecutionEstimate } from '@/services/tradeExecutionService';
+import { useState, useCallback, useRef } from "react";
+import {
+  tradeExecutionService,
+  type TradeRequest,
+  type TradeResult,
+  type ExecutionEstimate,
+} from "@/services/tradeExecutionService";
 
 interface TradeExecutionState {
   isExecuting: boolean;
@@ -47,14 +52,25 @@ export function useTradeExecution() {
   };
 
   const executeTrade = useCallback(async (request: TradeRequest) => {
-    const estimate = tradeExecutionService.getEstimate(request.slippageTolerance);
-    setState((s) => ({ ...s, isExecuting: true, error: null, result: null, estimate }));
+    const estimate = tradeExecutionService.getEstimate(
+      request.slippageTolerance
+    );
+    setState((s) => ({
+      ...s,
+      isExecuting: true,
+      error: null,
+      result: null,
+      estimate,
+    }));
 
     // Poll slippage every 500ms during execution
     slippagePollRef.current = setInterval(async () => {
       const rate = await tradeExecutionService.getExchangeRate(request.asset);
       const slippage = Math.abs(rate - request.slippageTolerance) * 100;
-      setState((s) => ({ ...s, liveSlippage: parseFloat(slippage.toFixed(2)) }));
+      setState((s) => ({
+        ...s,
+        liveSlippage: parseFloat(slippage.toFixed(2)),
+      }));
     }, 500);
 
     try {
@@ -65,7 +81,7 @@ export function useTradeExecution() {
         isExecuting: false,
         result,
         executionTimeMs: result.executionTimeMs,
-        error: result.success ? null : (result.error ?? 'Trade failed'),
+        error: result.success ? null : result.error ?? "Trade failed",
       }));
       return result;
     } catch (err) {
@@ -78,7 +94,14 @@ export function useTradeExecution() {
 
   const reset = useCallback(() => {
     stopSlippagePoll();
-    setState({ isExecuting: false, result: null, error: null, executionTimeMs: null, estimate: null, liveSlippage: 0 });
+    setState({
+      isExecuting: false,
+      result: null,
+      error: null,
+      executionTimeMs: null,
+      estimate: null,
+      liveSlippage: 0,
+    });
   }, []);
 
   return { ...state, executeTrade, preload, reset };

@@ -1,5 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { SignalProvider } from "@/lib/types";
+import { queryOptions } from "@/lib/queryOptions";
+
+export type LeaderboardTimeRange = "daily" | "weekly" | "monthly" | "all-time";
+
+const TIME_RANGE_STORAGE_KEY = "stellarswipe:leaderboard-time-range";
+
+const VALID_TIME_RANGES: LeaderboardTimeRange[] = [
+  "daily",
+  "weekly",
+  "monthly",
+  "all-time",
+];
+
+function getPersistedTimeRange(): LeaderboardTimeRange {
+  if (typeof window === "undefined") return "all-time";
+  const stored = localStorage.getItem(
+    TIME_RANGE_STORAGE_KEY
+  ) as LeaderboardTimeRange | null;
+  return stored && VALID_TIME_RANGES.includes(stored) ? stored : "all-time";
+}
 
 const mockProviders: SignalProvider[] = [
   {
@@ -54,12 +75,27 @@ const mockProviders: SignalProvider[] = [
 ];
 
 export function useLeaderboard() {
-  return useQuery({
-    queryKey: ["leaderboard"],
-    queryFn: async () => {
-      // In real app, fetch from API
+  const [timeRange, setTimeRangeState] = useState<LeaderboardTimeRange>(
+    getPersistedTimeRange
+  );
+
+  const setTimeRange = (range: LeaderboardTimeRange) => {
+    setTimeRangeState(range);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TIME_RANGE_STORAGE_KEY, range);
+    }
+  };
+
+  const query = useQuery({
+    queryKey: ["leaderboard", timeRange],
+    queryFn: async (): Promise<SignalProvider[]> => {
+      // In real app, fetch from API with timeRange param
       return mockProviders;
     },
-    staleTime: 60000,
+    ...queryOptions.leaderboard,
+    // Keep the current rows (and pagination) in place while a new range loads.
+    placeholderData: keepPreviousData,
   });
+
+  return { ...query, timeRange, setTimeRange };
 }

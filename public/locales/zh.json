@@ -31,7 +31,10 @@
     "pass": "跳过",
     "execute_trade": "执行交易",
     "demo_trade": "演示交易",
-    "share": "分享"
+    "share": "分享",
+    "matching_count": {
+      "other": "{{count}} 个信号匹配“{{query}}”"
+    }
   },
   "trade": {
     "trade_executed": "交易已执行",
@@ -45,7 +48,11 @@
     "enable_notifications": "启用通知",
     "notifications_disabled": "通知已被屏蔽，请检查浏览器设置。",
     "trade_success": "交易成功",
-    "trade_failure": "交易失败"
+    "trade_failure": "交易失败",
+    "unread_count": {
+      "other": "{{count}} 条未读通知"
+    },
+    "none_unread": "通知，全部已读"
   },
   "wallet": {
     "connect_wallet": "连接钱包",
@@ -59,5 +66,57 @@
     "about": "关于",
     "analytics": "分析",
     "documentation": "文档"
+  },
+  "filters": {
+    "active_count": {
+      "other": "已启用 {{count}} 个筛选条件"
+    },
+    "none_active": "没有启用的筛选条件"
+  },
+  "list": {
+    "viewed_all": {
+      "other": "您已查看全部 {{count}} 项"
+    }
+  },
+  "comparison": {
+    "items_selected": {
+      "other": "已选择 {{count}} 项"
+    }
+  },
+  "portfolio": {
+    "assets_count": {
+      "other": "{{count}} 项资产"
+    }
+  },
+  "sessions": {
+    "revoke_all": {
+      "other": "撤销其他 {{count}} 个会话"
+    },
+    "just_now": "刚刚",
+    "minutes_ago": {
+      "other": "{{count}} 分钟前"
+    },
+    "hours_ago": {
+      "other": "{{count}} 小时前"
+    },
+    "days_ago": {
+      "other": "{{count}} 天前"
+    }
+  },
+  "referral": {
+    "count": {
+      "other": "{{count}} 次推荐"
+    }
+  },
+  "compare": {
+    "export_success": {
+      "other": "已导出 {{count}} 个信号。"
+    }
+  },
+  "snooze": {
+    "minutes": "{{count}} 分钟",
+    "hours": {
+      "other": "{{count}} 小时"
+    }
   }
 }

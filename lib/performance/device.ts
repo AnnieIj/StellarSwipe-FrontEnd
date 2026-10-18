@@ -45,7 +45,11 @@ export function resolveNetworkType(): NetworkConnectionType {
   const connection = nav.connection;
   if (!connection?.type && !connection?.effectiveType) return "unknown";
 
-  const type = (connection.type ?? connection.effectiveType ?? "").toLowerCase();
+  const type = (
+    connection.type ??
+    connection.effectiveType ??
+    ""
+  ).toLowerCase();
   if (type.includes("wifi")) return "wifi";
   if (type.includes("wimax")) return "wifi";
   if (
@@ -113,12 +117,19 @@ export async function getDeviceSnapshot(): Promise<DeviceSnapshot> {
   };
 }
 
-export function getMemoryUsageMb(): { usedMb: number | null; totalMb: number | null } {
+export function getMemoryUsageMb(): {
+  usedMb: number | null;
+  totalMb: number | null;
+} {
   if (typeof performance === "undefined") {
     return { usedMb: null, totalMb: null };
   }
 
-  const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory;
+  const memory = (
+    performance as Performance & {
+      memory?: { usedJSHeapSize: number; totalJSHeapSize: number };
+    }
+  ).memory;
   if (!memory) {
     return { usedMb: null, totalMb: null };
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRelativeTime } from "@/hooks/useRelativeTime";
+import { Timestamp } from "@/components/Timestamp";
 
 interface RelativeTimestampProps {
   timestamp: Date;
@@ -8,16 +8,14 @@ interface RelativeTimestampProps {
 }
 
 /**
- * Displays a localized relative timestamp (e.g. "2 minutes ago", "3 hours ago")
- * using Intl.RelativeTimeFormat. Falls back to an absolute timestamp if
- * localization fails.
+ * Displays a localized relative timestamp (e.g. "2 minutes ago", "3 hours ago").
+ *
+ * Delegates to the shared <Timestamp> component (#562) which handles
+ * locale/timezone resolution, tooltip, and invalid-date fallback.
  */
-export function RelativeTimestamp({ timestamp, className }: RelativeTimestampProps) {
-  const label = useRelativeTime(timestamp);
-
-  return (
-    <span className={className}>
-      {label}
-    </span>
-  );
+export function RelativeTimestamp({
+  timestamp,
+  className,
+}: RelativeTimestampProps) {
+  return <Timestamp value={timestamp} mode="relative" className={className} />;
 }

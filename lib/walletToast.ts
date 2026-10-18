@@ -28,12 +28,19 @@ export const walletToast = {
 
   notFound: () =>
     toast.error("Wallet not found", {
-      description: "Freighter extension is not installed. Please add it to your browser.",
+      description:
+        "Freighter extension is not installed. Please add it to your browser.",
     }),
 
   connectError: () =>
     toast.error("Connection failed", {
       description: "Could not connect to your wallet. Please try again.",
+    }),
+
+  timeout: () =>
+    toast.error("Connection timed out", {
+      description:
+        "Your wallet didn't respond in time. Check for a pending approval popup, then try again.",
     }),
 
   signError: () =>

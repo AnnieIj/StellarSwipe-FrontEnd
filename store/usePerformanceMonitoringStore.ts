@@ -50,7 +50,9 @@ interface PerformanceMonitoringState {
 }
 
 function createAnonymousId(): string {
-  return `anon_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+  return `anon_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(
+    36
+  )}`;
 }
 
 function trimArray<T>(arr: T[], max: number): T[] {
@@ -81,111 +83,115 @@ function buildNetworkBreakdown(
   return breakdown;
 }
 
-export const usePerformanceMonitoringStore = create<PerformanceMonitoringState>()(
-  persist(
-    (set, get) => ({
-      consent: "pending",
-      anonymousSessionId: createAnonymousId(),
-      device: null,
-      routeLoads: [],
-      apiResponses: [],
-      crashes: [],
-      heatmap: [],
-      memorySamples: [],
-      batterySamples: [],
-      sessionEvents: [],
+export const usePerformanceMonitoringStore =
+  create<PerformanceMonitoringState>()(
+    persist(
+      (set, get) => ({
+        consent: "pending",
+        anonymousSessionId: createAnonymousId(),
+        device: null,
+        routeLoads: [],
+        apiResponses: [],
+        crashes: [],
+        heatmap: [],
+        memorySamples: [],
+        batterySamples: [],
+        sessionEvents: [],
 
-      setConsent: (status) => set({ consent: status }),
+        setConsent: (status) => set({ consent: status }),
 
-      setDevice: (device) => set({ device }),
+        setDevice: (device) => set({ device }),
 
-      recordRouteLoad: (metric) =>
-        set((state) => ({
-          routeLoads: trimArray([...state.routeLoads, metric], MAX_ROUTE_LOADS),
-        })),
+        recordRouteLoad: (metric) =>
+          set((state) => ({
+            routeLoads: trimArray(
+              [...state.routeLoads, metric],
+              MAX_ROUTE_LOADS
+            ),
+          })),
 
-      recordApiResponse: (metric) =>
-        set((state) => ({
-          apiResponses: trimArray(
-            [...state.apiResponses, metric],
-            MAX_API_RESPONSES
-          ),
-        })),
+        recordApiResponse: (metric) =>
+          set((state) => ({
+            apiResponses: trimArray(
+              [...state.apiResponses, metric],
+              MAX_API_RESPONSES
+            ),
+          })),
 
-      recordCrash: (report) =>
-        set((state) => ({
-          crashes: trimArray([...state.crashes, report], MAX_CRASHES),
-        })),
+        recordCrash: (report) =>
+          set((state) => ({
+            crashes: trimArray([...state.crashes, report], MAX_CRASHES),
+          })),
 
-      recordHeatmapPoint: (point) =>
-        set((state) => ({
-          heatmap: trimArray([...state.heatmap, point], MAX_HEATMAP),
-        })),
+        recordHeatmapPoint: (point) =>
+          set((state) => ({
+            heatmap: trimArray([...state.heatmap, point], MAX_HEATMAP),
+          })),
 
-      recordMemorySample: (sample) =>
-        set((state) => ({
-          memorySamples: trimArray(
-            [...state.memorySamples, sample],
-            MAX_MEMORY_SAMPLES
-          ),
-        })),
+        recordMemorySample: (sample) =>
+          set((state) => ({
+            memorySamples: trimArray(
+              [...state.memorySamples, sample],
+              MAX_MEMORY_SAMPLES
+            ),
+          })),
 
-      recordBatterySample: (sample) =>
-        set((state) => ({
-          batterySamples: trimArray(
-            [...state.batterySamples, sample],
-            MAX_BATTERY_SAMPLES
-          ),
-        })),
+        recordBatterySample: (sample) =>
+          set((state) => ({
+            batterySamples: trimArray(
+              [...state.batterySamples, sample],
+              MAX_BATTERY_SAMPLES
+            ),
+          })),
 
-      recordSessionEvent: (event) =>
-        set((state) => ({
-          sessionEvents: trimArray(
-            [...state.sessionEvents, event],
-            MAX_SESSION_EVENTS
-          ),
-        })),
+        recordSessionEvent: (event) =>
+          set((state) => ({
+            sessionEvents: trimArray(
+              [...state.sessionEvents, event],
+              MAX_SESSION_EVENTS
+            ),
+          })),
 
-      getSummary: () => {
-        const state = get();
-        return {
+        getSummary: () => {
+          const state = get();
+          return {
+            routeLoads: state.routeLoads,
+            apiResponses: state.apiResponses,
+            crashes: state.crashes,
+            heatmap: state.heatmap,
+            memorySamples: state.memorySamples,
+            batterySamples: state.batterySamples,
+            device: state.device,
+            networkBreakdown: buildNetworkBreakdown(state.apiResponses),
+          };
+        },
+
+        clearMetrics: () =>
+          set({
+            routeLoads: [],
+            apiResponses: [],
+            crashes: [],
+            heatmap: [],
+            memorySamples: [],
+            batterySamples: [],
+            sessionEvents: [],
+          }),
+      }),
+      {
+        name: "stellar-performance-monitoring",
+        partialize: (state) => ({
+          consent: state.consent,
+          anonymousSessionId: state.anonymousSessionId,
           routeLoads: state.routeLoads,
           apiResponses: state.apiResponses,
           crashes: state.crashes,
           heatmap: state.heatmap,
           memorySamples: state.memorySamples,
           batterySamples: state.batterySamples,
-          device: state.device,
-          networkBreakdown: buildNetworkBreakdown(state.apiResponses),
-        };
-      },
-
-      clearMetrics: () =>
-        set({
-          routeLoads: [],
-          apiResponses: [],
-          crashes: [],
-          heatmap: [],
-          memorySamples: [],
-          batterySamples: [],
-          sessionEvents: [],
         }),
-    }),
-    {
-      name: "stellar-performance-monitoring",
-      partialize: (state) => ({
-        consent: state.consent,
-        anonymousSessionId: state.anonymousSessionId,
-        routeLoads: state.routeLoads,
-        apiResponses: state.apiResponses,
-        crashes: state.crashes,
-        heatmap: state.heatmap,
-        memorySamples: state.memorySamples,
-        batterySamples: state.batterySamples,
-      }),
-    }
-  )
-);
+      }
+    )
+  );
 
 export function isMonitoringEnabled(): boolean {
   return usePerformanceMonitoringStore.getState().consent === "granted";

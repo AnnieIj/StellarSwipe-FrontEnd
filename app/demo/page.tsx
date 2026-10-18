@@ -30,9 +30,7 @@ export default function DemoPage() {
 
         {/* ── Issue #22: Stop-Loss Slider ─────────────────────────────── */}
         <section className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-4 sm:p-6">
-          <h2 className="text-base font-semibold">
-            #22 — Stop-Loss Slider
-          </h2>
+          <h2 className="text-base font-semibold">#22 — Stop-Loss Slider</h2>
 
           <StopLossSlider
             value={stopLossPercent}
@@ -85,9 +83,7 @@ export default function DemoPage() {
 
         {/* ── Issue #37: Copy-to-Clipboard ────────────────────────────── */}
         <section className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-4 sm:p-6">
-          <h2 className="text-base font-semibold">
-            #37 — Copy-to-Clipboard
-          </h2>
+          <h2 className="text-base font-semibold">#37 — Copy-to-Clipboard</h2>
 
           <CopyField
             label="Wallet Address"

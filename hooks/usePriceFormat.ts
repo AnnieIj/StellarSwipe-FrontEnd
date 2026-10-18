@@ -1,16 +1,11 @@
 import { usePricePrecisionStore } from "@/store/usePricePrecisionStore";
 
 /**
- * Returns a price-formatting function that respects the current precision mode.
- *
- * Usage:
- *   const fmt = usePriceFormat();
- *   fmt(0.4821)  // "$0.4821"  (compact) or "$0.48210000" (precise)
+ * Returns a formatter function that formats a price number according to
+ * the user's current precision preference (standard or high).
  */
-export function usePriceFormat() {
-  const { mode } = usePricePrecisionStore();
-  const decimals = mode === "precise" ? 8 : 4;
-
-  return (value: number, prefix = "$"): string =>
-    `${prefix}${value.toFixed(decimals)}`;
+export function usePriceFormat(): (price: number) => string {
+  const { precision } = usePricePrecisionStore();
+  const decimals = precision === "high" ? 6 : 4;
+  return (price: number) => price.toFixed(decimals);
 }

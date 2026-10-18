@@ -20,6 +20,8 @@ interface PricePrecisionState {
 export const usePricePrecisionStore = create<PricePrecisionState>()((set) => ({
   mode: "compact",
   toggle: () =>
-    set((state) => ({ mode: state.mode === "compact" ? "precise" : "compact" })),
+    set((state) => ({
+      mode: state.mode === "compact" ? "precise" : "compact",
+    })),
   setMode: (mode) => set({ mode }),
 }));

@@ -705,8 +705,8 @@ describe("PollerRepo — boundary and edge cases", () => {
     poller.start();
     clock.advance(0); await flushPromises();
     expect(receivedClock).toBe(clock);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    expect(receivedClock!.now()).toBe(12_345);
+    // receivedClock is guaranteed non-null here — the mock assigns it synchronously above
+    expect((receivedClock as Clock).now()).toBe(12_345);
     poller.stop();
   });
 });

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Info, Shield, SlidersHorizontal } from "lucide-react";
 import { usePositionLimitStore } from "@/store/usePositionLimitStore";
+import { useSegmentedControlKeyboard } from "@/hooks/useSegmentedControlKeyboard";
 
 interface PositionLimitToggleProps {
   /** Total portfolio balance in XLM (or base asset) */
@@ -17,9 +18,21 @@ export function PositionLimitToggle({
   isLoading = false,
 }: PositionLimitToggleProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
-  const { enabled, percentage, toggle, setPercentage } = usePositionLimitStore();
+  const { enabled, percentage, toggle, setPercentage } =
+    usePositionLimitStore();
+  const isHydrated = usePositionLimitHydrated();
 
-  const portfolioAvailable = portfolioBalance !== null && portfolioBalance !== undefined && !isLoading;
+  const portfolioAvailable =
+    portfolioBalance !== null && portfolioBalance !== undefined && !isLoading;
+
+  const percentagePresets = [1, 3, 5, 10, 15, 25];
+  const activePresetIndex = percentagePresets.indexOf(percentage);
+
+  const { groupRef: presetGroupRef, handleKeyDown: handlePresetKeyDown } = useSegmentedControlKeyboard({
+    itemCount: percentagePresets.length,
+    activeIndex: activePresetIndex >= 0 ? activePresetIndex : 0,
+    onActiveChange: (i) => setPercentage(percentagePresets[i]),
+  });
 
   const calculatedLimit = useMemo(() => {
     if (!portfolioAvailable || !enabled) return null;
@@ -31,13 +44,27 @@ export function PositionLimitToggle({
     setPercentage(val);
   };
 
+  // Render a stable skeleton until the persisted store state is available.
+  if (!isHydrated) {
+    return (
+      <div className="w-full rounded-xl border border-border bg-surface/60 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="h-4 w-32 rounded bg-surface-high animate-pulse" />
+          <div className="h-6 w-11 rounded-full bg-surface-high animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full rounded-xl border border-border bg-surface/60 p-4 transition-colors hover:border-border-strong">
       {/* Header row */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-foreground-muted" />
-          <span className="text-sm font-medium text-foreground">Position Limit</span>
+          <span className="text-sm font-medium text-foreground">
+            Position Limit
+          </span>
           <div className="relative">
             <button
               type="button"
@@ -64,9 +91,9 @@ export function PositionLimitToggle({
                 </p>
                 <div className="space-y-1 text-foreground-muted">
                   <p>
-                    Limits each trade to a percentage of your total portfolio. When
-                    enabled, trades exceeding this limit will be automatically
-                    reduced.
+                    Limits each trade to a percentage of your total portfolio.
+                    When enabled, trades exceeding this limit will be
+                    automatically reduced.
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Max:</span>{" "}
@@ -89,12 +116,12 @@ export function PositionLimitToggle({
           aria-label="Toggle position limit"
           disabled={!portfolioAvailable}
           onClick={toggle}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background fc-toggle ${
             !portfolioAvailable
               ? "cursor-not-allowed opacity-40"
               : enabled
-                ? "bg-primary"
-                : "bg-foreground/20"
+              ? "bg-primary"
+              : "bg-foreground/20"
           }`}
         >
           <motion.span
@@ -119,10 +146,16 @@ export function PositionLimitToggle({
       >
         <div className="mt-3 space-y-3">
           <p className="text-xs text-foreground-subtle">
-            Cap trade at <span className="font-medium text-foreground">{percentage}%</span> of portfolio
+            Cap trade at{" "}
+            <span className="font-medium text-foreground">{percentage}%</span>{" "}
+            of portfolio
             {calculatedLimit && (
               <span className="text-foreground-muted">
-                {" "}· Max trade: <span className="font-mono text-foreground">{calculatedLimit} XLM</span>
+                {" "}
+                · Max trade:{" "}
+                <span className="font-mono text-foreground">
+                  {calculatedLimit} XLM
+                </span>
               </span>
             )}
           </p>
@@ -152,13 +185,22 @@ export function PositionLimitToggle({
           </div>
 
           {/* Quick presets */}
-          <div className="flex gap-1.5">
-            {[1, 3, 5, 10, 15, 25].map((val) => (
+          <div
+            ref={presetGroupRef}
+            role="radiogroup"
+            aria-label="Position limit presets"
+            onKeyDown={handlePresetKeyDown}
+            className="flex gap-1.5"
+          >
+            {percentagePresets.map((val, index) => (
               <button
                 key={val}
+                type="button"
+                role="radio"
+                aria-checked={percentage === val}
+                tabIndex={percentage === val ? 0 : -1}
                 onClick={() => setPercentage(val)}
                 aria-label={`Set position limit to ${val}%`}
-                aria-pressed={percentage === val}
                 className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                   percentage === val
                     ? "bg-accent-primary/10 text-accent-sky ring-1 ring-[hsl(var(--accent-primary)/0.3)]"

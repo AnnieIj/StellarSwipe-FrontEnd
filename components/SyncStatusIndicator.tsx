@@ -19,7 +19,10 @@ export function SyncStatusIndicator({ status, className }: Props) {
       <span
         role="status"
         aria-live="polite"
-        className={cn("inline-flex items-center gap-1 text-xs text-accent-danger", className)}
+        className={cn(
+          "inline-flex items-center gap-1 text-xs text-accent-danger",
+          className
+        )}
       >
         <WifiOff size={11} aria-hidden="true" />
         Offline
@@ -32,7 +35,10 @@ export function SyncStatusIndicator({ status, className }: Props) {
       <span
         role="status"
         aria-live="polite"
-        className={cn("inline-flex items-center gap-1 text-xs text-accent-sky", className)}
+        className={cn(
+          "inline-flex items-center gap-1 text-xs text-accent-sky",
+          className
+        )}
       >
         <RefreshCw size={11} className="animate-spin" aria-hidden="true" />
         Syncing…
@@ -45,7 +51,10 @@ export function SyncStatusIndicator({ status, className }: Props) {
       <span
         role="status"
         aria-live="polite"
-        className={cn("inline-flex items-center gap-1 text-xs text-accent-warning", className)}
+        className={cn(
+          "inline-flex items-center gap-1 text-xs text-accent-warning",
+          className
+        )}
       >
         <Clock size={11} aria-hidden="true" />
         Stale · {lastSyncedAt ? relativeTime : "unknown"}
@@ -57,9 +66,15 @@ export function SyncStatusIndicator({ status, className }: Props) {
     <span
       role="status"
       aria-label={lastSyncedAt ? `Last synced ${relativeTime}` : "Live"}
-      className={cn("inline-flex items-center gap-1.5 text-xs text-foreground-subtle", className)}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-xs text-foreground-subtle",
+        className
+      )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-accent-success" aria-hidden="true" />
+      <span
+        className="h-1.5 w-1.5 rounded-full bg-accent-success"
+        aria-hidden="true"
+      />
       {lastSyncedAt ? relativeTime : "Live"}
     </span>
   );

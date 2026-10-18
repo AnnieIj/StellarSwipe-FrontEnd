@@ -1,14 +1,36 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+// Ref-based in-flight flag ensures only one confirm request is sent per user
+// action — covers both the button click and the Enter-key shortcut paths.
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Info, AlertCircle } from "lucide-react";
+import {
+  X,
+  Info,
+  AlertCircle,
+  ArrowLeft,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { isTopOverlay } from "@/hooks/overlayManager";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
 import { usePositionLimitStore } from "@/store/usePositionLimitStore";
+import { useTradePresetsStore } from "@/store/useTradePresetsStore";
+import { TradePresetEditor } from "@/components/TradePresetEditor";
+import { useWalletStore } from "@/store/useWalletStore";
 import { FeeDisclosurePanel } from "@/components/FeeDisclosurePanel";
 import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
+import { validateTradeField } from "@/lib/tradeSchemas";
+import { useNetworkMismatch } from "@/components/NetworkMismatchBanner";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
+
+function truncateKey(key: string) {
+  return `${key.slice(0, 6)}...${key.slice(-4)}`;
+}
+
+type ModalStep = "input" | "review" | "optimistic";
 
 type OrderType = "LIMIT" | "MARKET";
 
@@ -18,6 +40,12 @@ export interface PositionDetails {
   orderType: OrderType;
 }
 
+/** Market price snapshot. `expiresAt` is epoch ms; omit when validity is unknown. */
+export interface TradeQuote {
+  price: number;
+  expiresAt?: number;
+}
+
 interface TradeModalProps {
   open: boolean;
   onClose: () => void;
@@ -25,22 +53,95 @@ interface TradeModalProps {
   walletBalance?: number;
   marketPrice?: number;
   portfolioBalance?: number;
+  /** Current quote; its price overrides `marketPrice` and its expiry gates confirmation. */
+  quote?: TradeQuote;
+  /** Fetches a fresh quote. On rejection the draft is kept and the error is shown. */
+  onRefreshQuote?: () => Promise<TradeQuote>;
 }
 
-const mockBuildTx = (order: object) =>
+const mockBuildTx = (_order: object) =>
   new Promise<void>((res) =>
     setTimeout(() => {
-      console.log("tx built", order);
       res();
     }, 800)
   );
 
-function validateField(value: string, label: string): string {
-  if (!value.trim()) return `${label} is required`;
-  const num = Number(value);
-  if (isNaN(num)) return `${label} must be a number`;
-  if (num <= 0) return `${label} must be greater than 0`;
-  return "";
+// The order form only trades XLM today; it is part of the draft context so a
+// draft can never be restored into a different asset.
+const ASSET_CODE = "XLM";
+const TRADE_DRAFT_PREFIX = "trade-draft:";
+
+interface TradeDraftFields {
+  type: OrderType;
+  limitPrice: string;
+  amount: string;
+  stopLoss: number;
+  positionLimit: boolean;
+}
+
+interface TradeDraft extends TradeDraftFields {
+  /** Asset, network and wallet the draft was entered under. */
+  context: string;
+}
+
+const DEFAULT_DRAFT: TradeDraftFields = {
+  type: "LIMIT",
+  limitPrice: "",
+  amount: "",
+  stopLoss: 10,
+  positionLimit: false,
+};
+
+function isDefaultDraft(fields: TradeDraftFields): boolean {
+  return (Object.keys(DEFAULT_DRAFT) as (keyof TradeDraftFields)[]).every(
+    (key) => fields[key] === DEFAULT_DRAFT[key]
+  );
+}
+
+function readTradeDraft(
+  key: string,
+  context: string
+): TradeDraftFields | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as TradeDraft;
+    if (!draft || draft.context !== context) return null;
+    return {
+      type: draft.type === "MARKET" ? "MARKET" : "LIMIT",
+      limitPrice: typeof draft.limitPrice === "string" ? draft.limitPrice : "",
+      amount: typeof draft.amount === "string" ? draft.amount : "",
+      stopLoss: typeof draft.stopLoss === "number" ? draft.stopLoss : 10,
+      positionLimit: draft.positionLimit === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeTradeDraft(
+  key: string,
+  context: string,
+  fields: TradeDraftFields
+) {
+  try {
+    if (isDefaultDraft(fields)) {
+      localStorage.removeItem(key);
+      return;
+    }
+    const draft: TradeDraft = { context, ...fields };
+    localStorage.setItem(key, JSON.stringify(draft));
+  } catch {
+    // Storage unavailable — the draft is simply not kept.
+  }
+}
+
+function clearTradeDraft(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Storage unavailable — nothing to clear.
+  }
 }
 
 export function TradeModal({
@@ -48,9 +149,12 @@ export function TradeModal({
   onClose,
   onConfirm,
   walletBalance = 250,
-  marketPrice = 0.4821,
+  marketPrice: marketPriceProp = 0.4821,
   portfolioBalance = 0,
+  quote,
+  onRefreshQuote,
 }: TradeModalProps) {
+  const [step, setStep] = useState<ModalStep>("input");
   const [type, setType] = useState<OrderType>("LIMIT");
   const [limitPrice, setLimitPrice] = useState("");
   const [amount, setAmount] = useState("");
@@ -60,13 +164,50 @@ export function TradeModal({
   const [touched, setTouched] = useState({ limitPrice: false, amount: false });
   // Slippage warning: shown when estimated slippage exceeds threshold
   const [slippageAcknowledged, setSlippageAcknowledged] = useState(false);
+  // Stores the failure message when on-chain confirmation fails after optimistic success
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [editingPresets, setEditingPresets] = useState(false);
+  const { presets: sizePresets } = useTradePresetsStore();
+  // Quote fetched via onRefreshQuote; takes precedence over the `quote` prop
+  const [refreshedQuote, setRefreshedQuote] = useState<TradeQuote | null>(null);
+  const [quoteRefreshing, setQuoteRefreshing] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  // Clock for the quote countdown; only ticks while a quote with expiry is shown
+  const [now, setNow] = useState(() => Date.now());
   const { isDemoMode } = useDemoModeStore();
+  const walletPublicKey = useWalletStore((s) => s.publicKey);
+  const walletNetworkDraft = useWalletStore((s) => s.network);
+  const draftContext = `${ASSET_CODE}:${walletNetworkDraft}:${walletPublicKey ?? ""}`;
+  const draftKey = `${TRADE_DRAFT_PREFIX}${draftContext}`;
   const { enabled: positionLimitEnabled, percentage: positionLimitPercentage } =
     usePositionLimitStore();
+  const {
+    isMismatch: networkMismatch,
+    walletNetwork,
+    appNetwork,
+    state: networkState,
+  } = useNetworkMismatch();
+  const walletKey = useWalletStore((s) => s.publicKey);
+  const walletConnected = useWalletStore((s) => s.isConnected);
+  const walletReady = walletConnected && !!walletKey;
+  const networkLabel = networkMismatch
+    ? walletNetwork
+    : networkState.status === "match"
+    ? appNetwork
+    : "Unverified";
   const fmt = usePriceFormat();
 
   // Live-region ref for announcing order-type changes to screen readers
   const liveRegionRef = useRef<HTMLSpanElement>(null);
+
+  /**
+   * In-flight ref for the confirm action.
+   * Using a ref (not just `submitting` state) so the guard check is
+   * synchronous — closing the window between a React re-render and the
+   * next event, which could otherwise allow a second submission to slip
+   * through on rapid double-click or quick Enter-key presses.
+   */
+  const confirmInFlightRef = useRef(false);
 
   // Calculate position limit in USD value
   const positionLimitInUSD = useMemo(() => {
@@ -75,19 +216,34 @@ export function TradeModal({
   }, [positionLimitEnabled, portfolioBalance, positionLimitPercentage]);
 
   const limitPriceError =
-    type === "LIMIT" && touched.limitPrice ? validateField(limitPrice, "Limit price") : "";
-  const amountError = touched.amount ? validateField(amount, "Amount") : "";
+    type === "LIMIT" && touched.limitPrice
+      ? validateTradeField(limitPrice, "Limit price")
+      : "";
+  const amountError = touched.amount
+    ? validateTradeField(amount, "Amount")
+    : "";
 
   const focusTrapRef = useFocusTrap({
     isActive: open,
     initialFocus: 'button[data-order-type="LIMIT"]',
   });
 
+  const activeQuote = refreshedQuote ?? quote;
+  const marketPrice = activeQuote?.price ?? marketPriceProp;
+  const quoteExpiresAt = activeQuote?.expiresAt;
+  const quoteSecondsLeft =
+    quoteExpiresAt !== undefined
+      ? Math.max(0, Math.ceil((quoteExpiresAt - now) / 1000))
+      : null;
+  const quoteExpired = quoteSecondsLeft === 0;
+
   const price = type === "MARKET" ? marketPrice : parseFloat(limitPrice) || 0;
   const total = price * (parseFloat(amount) || 0);
   const insufficient = total > walletBalance;
   const exceedsPositionLimit =
-    positionLimitEnabled && positionLimitInUSD !== null && total > positionLimitInUSD;
+    positionLimitEnabled &&
+    positionLimitInUSD !== null &&
+    total > positionLimitInUSD;
   const hasErrors = !!amountError || (type === "LIMIT" && !!limitPriceError);
 
   // Estimate slippage: market orders use a fixed proxy; limit orders use
@@ -109,15 +265,81 @@ export function TradeModal({
     exceedsPositionLimit ||
     submitting ||
     hasErrors ||
-    showSlippageWarning;
+    showSlippageWarning ||
+    networkMismatch ||
+    !walletReady;
 
   // Reset form state when modal opens
   useEffect(() => {
     if (open) {
+      setStep("input");
       setTouched({ limitPrice: false, amount: false });
       setSlippageAcknowledged(false);
+      setConfirmError(null);
+      setRefreshedQuote(null);
+      setQuoteError(null);
     }
   }, [open]);
+
+  // Restore the unfinished draft for this asset/network/wallet. A draft from
+  // another context is never applied, so the fields fall back to defaults.
+  // Skip the next save so the restored values aren't written back mid-load.
+  const skipDraftSaveRef = useRef(false);
+  useEffect(() => {
+    if (!open) return;
+    const draft = readTradeDraft(draftKey, draftContext) ?? DEFAULT_DRAFT;
+    skipDraftSaveRef.current = true;
+    setType(draft.type);
+    setLimitPrice(draft.limitPrice);
+    setAmount(draft.amount);
+    setStopLoss(draft.stopLoss);
+    setPositionLimit(draft.positionLimit);
+  }, [open, draftKey, draftContext]);
+
+  // Persist entry fields so leaving the trade flow doesn't lose them.
+  useEffect(() => {
+    if (!open) return;
+    if (skipDraftSaveRef.current) {
+      skipDraftSaveRef.current = false;
+      return;
+    }
+    writeTradeDraft(draftKey, draftContext, {
+      type,
+      limitPrice,
+      amount,
+      stopLoss,
+      positionLimit,
+    });
+  }, [
+    open,
+    draftKey,
+    draftContext,
+    type,
+    limitPrice,
+    amount,
+    stopLoss,
+    positionLimit,
+  ]);
+
+  // Tick the quote countdown once a second while an expiring quote is shown
+  useEffect(() => {
+    if (!open || quoteExpiresAt === undefined) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [open, quoteExpiresAt]);
+
+  // Switching or disconnecting the wallet invalidates the review: the order was
+  // reviewed against the previous account, so send the user back to the input step.
+  // Skipped while submitting so an in-flight confirm is not interrupted.
+  const walletKeyRef = useRef(walletKey);
+  useEffect(() => {
+    if (walletKeyRef.current === walletKey) return;
+    walletKeyRef.current = walletKey;
+    setStep((s) => (s === "review" ? "input" : s));
+    setSlippageAcknowledged(false);
+    setConfirmError(null);
+  }, [walletKey]);
 
   // Keyboard shortcuts: Escape → close, Enter (outside interactive elements) → confirm
   useEffect(() => {
@@ -125,14 +347,27 @@ export function TradeModal({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
+        // Only close when this modal is the topmost overlay.
+        const el = focusTrapRef.current as HTMLElement | null;
+        if (isTopOverlay(el)) {
+          e.preventDefault();
+          onClose();
+        }
         return;
       }
 
-      // Enter shortcut to confirm — only when focus is NOT on a button/link/input
-      // (those elements handle Enter natively)
-      if (e.key === "Enter" && !disabled) {
+      // Enter shortcut to confirm — only on the review step and only when focus
+      // is NOT on a button/link/input (those handle Enter natively). This
+      // intentionally does NOT trigger from the input step so users must
+      // explicitly reach the review step before confirming.
+      // Also guarded by `disabled` and `submitting` to prevent double-fire.
+      if (
+        e.key === "Enter" &&
+        step === "review" &&
+        !disabled &&
+        !submitting &&
+        !quoteExpired
+      ) {
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
         const role = (e.target as HTMLElement)?.getAttribute("role");
         const isInteractive =
@@ -153,21 +388,122 @@ export function TradeModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, disabled, onClose]);
+  }, [open, step, disabled, submitting, quoteExpired, onClose]);
+
+  // Preset buttons: set amount to N% of wallet balance divided by current price
+  const applyPreset = useCallback(
+    (pct: number) => {
+      if (!price) return;
+      const xlm = (walletBalance * pct) / 100 / price;
+      setAmount(xlm.toFixed(2));
+      setTouched((t) => ({ ...t, amount: true }));
+    },
+    [price, walletBalance]
+  );
+
+  // Refresh the quote; on failure the draft (inputs and step) is left untouched
+  const handleRefreshQuote = useCallback(async () => {
+    if (!onRefreshQuote || quoteRefreshing || submitting) return;
+    setQuoteRefreshing(true);
+    setQuoteError(null);
+    try {
+      setRefreshedQuote(await onRefreshQuote());
+    } catch (err) {
+      setQuoteError(
+        (err as Error).message ||
+          "Could not refresh the quote. Your order details are unchanged."
+      );
+    } finally {
+      setQuoteRefreshing(false);
+    }
+  }, [onRefreshQuote, quoteRefreshing, submitting]);
 
   const handleConfirm = useCallback(async () => {
-    if (disabled) return;
+    if (disabled || quoteExpired) return;
+    // Guard: ignore if a confirmation is already in-flight
+    if (confirmInFlightRef.current) return;
+    confirmInFlightRef.current = true;
+    setConfirmError(null);
+    // Optimistic: immediately show success UI before on-chain confirmation
+    setStep("optimistic");
     setSubmitting(true);
-    await mockBuildTx({ type, price, amount, stopLoss, positionLimit });
+    try {
+      // Server revalidates balance, network, amount and slippage before submission
+      const res = await fetch("/api/trades", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          publicKey: walletPublicKey,
+          network: walletNetwork,
+          orderType: type,
+          amount,
+          price,
+          slippagePercent: estimatedSlippage,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message ?? "Trade was rejected by the server.");
+      }
+      await mockBuildTx({ type, price, amount, stopLoss, positionLimit });
+    } catch (err) {
+      // Rollback: revert to review step and surface a distinct failure message.
+      // Only submission errors land here; once the order is placed, a failure
+      // in the caller's onConfirm must not send the user back to resubmit it.
+      setSubmitting(false);
+      confirmInFlightRef.current = false;
+      setStep("review");
+      setConfirmError(
+        (err as Error).message ||
+          "Transaction confirmation failed. Your order was not placed."
+      );
+      return;
+    }
     setSubmitting(false);
+    confirmInFlightRef.current = false;
+    clearTradeDraft(draftKey);
     onConfirm ? onConfirm({ amount, price, orderType: type }) : onClose();
-  }, [type, price, amount, stopLoss, positionLimit, onClose, onConfirm, disabled]);
+  }, [
+    type,
+    price,
+    amount,
+    stopLoss,
+    positionLimit,
+    onClose,
+    onConfirm,
+    disabled,
+    draftKey,
+    quoteExpired,
+    walletPublicKey,
+    walletNetwork,
+    estimatedSlippage,
+  ]);
+
+  const discardDraft = useCallback(() => {
+    clearTradeDraft(draftKey);
+    setType(DEFAULT_DRAFT.type);
+    setLimitPrice(DEFAULT_DRAFT.limitPrice);
+    setAmount(DEFAULT_DRAFT.amount);
+    setStopLoss(DEFAULT_DRAFT.stopLoss);
+    setPositionLimit(DEFAULT_DRAFT.positionLimit);
+    setTouched({ limitPrice: false, amount: false });
+  }, [draftKey]);
+
+  const hasDraftFields = !isDefaultDraft({
+    type,
+    limitPrice,
+    amount,
+    stopLoss,
+    positionLimit,
+  });
 
   // Announce order-type changes to screen readers via live region
   const handleOrderTypeChange = (newType: OrderType) => {
     setType(newType);
     if (liveRegionRef.current) {
-      liveRegionRef.current.textContent = `Order type changed to ${newType === "LIMIT" ? "Limit" : "Market"}`;
+      liveRegionRef.current.textContent = `Order type changed to ${
+        newType === "LIMIT" ? "Limit" : "Market"
+      }`;
     }
   };
 
@@ -179,6 +515,10 @@ export function TradeModal({
   const parsedNetworkFeeXLM = parseFloat(networkFee.split(" ")[0]) || 0;
   const networkFeeUSDC = parsedNetworkFeeXLM * (marketPrice || price || 0);
   const netAmount = Math.max(0, total - tradeFee - networkFeeUSDC);
+  // Estimates need a quote and an amount; without them show "—", not "$0.0000"
+  const feeEstimateAvailable = total > 0;
+  const formatEstimate = (value: number) =>
+    feeEstimateAvailable ? `$${value.toFixed(4)}` : "—";
 
   return (
     <AnimatePresence>
@@ -233,11 +573,13 @@ export function TradeModal({
                   Place Order
                 </h2>
                 <p id="trade-modal-description" className="sr-only">
-                  Use Tab to navigate fields. Press Escape to close. Press Enter to confirm when
-                  the form is valid.
+                  Use Tab to navigate fields. Press Escape to close. Press Enter
+                  to confirm when the form is valid.
                 </p>
                 {isDemoMode && (
-                  <span className="text-xs text-blue-400 font-medium">Demo Mode</span>
+                  <span className="text-xs text-blue-400 font-medium">
+                    Demo Mode
+                  </span>
                 )}
               </div>
               <button
@@ -275,295 +617,641 @@ export function TradeModal({
               ))}
             </div>
 
-            <div
-              className="space-y-4"
-              id={`${type.toLowerCase()}-panel`}
-              role="group"
-              aria-label={`${type === "LIMIT" ? "Limit" : "Market"} order fields`}
-            >
-              {/* Price row */}
-              {type === "LIMIT" ? (
-                <div>
-                  <label
-                    htmlFor="limit-price"
-                    className="text-xs text-foreground-muted mb-1 block"
-                  >
-                    Limit Price (USDC)
-                  </label>
-                  <input
-                    id="limit-price"
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    placeholder="0.00"
-                    value={limitPrice}
-                    onChange={(e) => setLimitPrice(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, limitPrice: true }))}
-                    aria-describedby={limitPriceError ? "limit-price-error" : undefined}
-                    aria-invalid={!!limitPriceError}
-                    className="w-full rounded-lg bg-input border border-border px-3 py-2 text-foreground placeholder-foreground-subtle text-sm
-                      focus:outline-none focus:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
-                  />
-                  {limitPriceError && (
-                    <p id="limit-price-error" role="alert" className="mt-1 text-xs text-accent-danger">
-                      {limitPriceError}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <span className="text-xs text-foreground-muted mb-1 block">
-                    Current Market Price
-                  </span>
-                  <div
-                    className="w-full rounded-lg bg-accent-market/40 border border-accent-market/30 px-3 py-2 text-accent-market text-sm font-mono"
-                    aria-label={`Current market price: ${fmt(marketPrice)} USDC`}
-                  >
-                    {fmt(marketPrice)} USDC
-                  </div>
-                </div>
-              )}
-
-              {/* Amount */}
-              <div>
-                <label
-                  htmlFor="trade-amount"
-                  className="text-xs text-foreground-muted mb-1 block"
-                >
-                  Amount (XLM)
-                </label>
-                <input
-                  id="trade-amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
-                  aria-describedby={amountError ? "trade-amount-error" : undefined}
-                  aria-invalid={!!amountError}
-                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-foreground placeholder-foreground-subtle text-sm
-                    focus:outline-none focus:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+            {step === "optimistic" ? (
+              <div
+                className="flex flex-col items-center gap-4 py-6 text-center"
+                role="status"
+                aria-live="polite"
+              >
+                <Loader2
+                  size={48}
+                  className="animate-spin text-foreground-muted"
+                  aria-hidden="true"
                 />
-                {amountError && (
-                  <p id="trade-amount-error" role="alert" className="mt-1 text-xs text-accent-danger">
-                    {amountError}
+                <div>
+                  <p className="text-base font-semibold text-foreground">
+                    Submitting order…
                   </p>
+                  <p className="mt-1 text-sm text-foreground-muted">
+                    Not placed until the network confirms it.
+                  </p>
+                </div>
+                {submitting && (
+                  <div
+                    className="h-1 w-32 overflow-hidden rounded-full bg-foreground/10"
+                    role="progressbar"
+                    aria-label="Confirming transaction"
+                  >
+                    <div className="h-full w-1/2 animate-pulse rounded-full bg-accent-market" />
+                  </div>
                 )}
               </div>
-
-              {/* Total (read-only) */}
-              <div>
-                <span className="text-xs text-foreground-muted mb-1 block">Total (USDC)</span>
+            ) : step === "input" ? (
+              <>
                 <div
-                  className={`w-full rounded-lg border px-3 py-2 text-sm font-mono
-                    ${
-                      insufficient
-                        ? "border-accent-danger/50 bg-accent-danger/10 text-accent-danger"
-                        : "border-border bg-input text-foreground"
-                    }`}
-                  aria-label={`Total: $${total.toFixed(4)} USDC${insufficient ? " — insufficient balance" : ""}`}
+                  className="space-y-4"
+                  id={`${type.toLowerCase()}-panel`}
+                  role="group"
+                  aria-label={`${
+                    type === "LIMIT" ? "Limit" : "Market"
+                  } order fields`}
                 >
-                  ${total.toFixed(4)}
-                  {insufficient && (
-                    <span className="ml-2 text-xs text-accent-danger">Insufficient balance</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Low balance alert */}
-              {insufficient && (
-                <div
-                  role="alert"
-                  className="mt-2 rounded-md border border-accent-danger/40 bg-accent-danger/10 p-3 text-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
+                  {/* Price row */}
+                  {type === "LIMIT" ? (
                     <div>
-                      <p className="font-medium text-accent-danger">Low balance</p>
-                      <p className="text-foreground-muted text-xs mt-1">
-                        You do not have enough funds to place this trade.
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <a
-                        href="https://www.stellar.org/lumens/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center rounded-md bg-accent-market px-3 py-1 text-xs font-medium text-foreground hover:opacity-90
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                      <label
+                        htmlFor="limit-price"
+                        className="text-xs text-foreground-muted mb-1 block"
                       >
-                        Top up
-                      </a>
+                        Limit Price (USDC)
+                      </label>
+                      <input
+                        id="limit-price"
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        placeholder="0.00"
+                        value={limitPrice}
+                        onChange={(e) => setLimitPrice(e.target.value)}
+                        onBlur={() =>
+                          setTouched((t) => ({ ...t, limitPrice: true }))
+                        }
+                        aria-describedby={
+                          limitPriceError ? "limit-price-error" : undefined
+                        }
+                        aria-invalid={!!limitPriceError}
+                        className="w-full rounded-lg bg-input border border-border px-3 py-2 text-foreground placeholder-foreground-subtle text-sm
+                          focus:outline-none focus:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                      />
+                      {limitPriceError && (
+                        <p
+                          id="limit-price-error"
+                          role="alert"
+                          className="mt-1 text-xs text-accent-danger"
+                        >
+                          {limitPriceError}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Position limit warning */}
-              {exceedsPositionLimit && positionLimitInUSD !== null && (
-                <div
-                  role="alert"
-                  className="mt-2 rounded-md border border-accent-warning/40 bg-accent-warning/10 p-3 text-sm"
-                >
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-4 w-4 text-accent-warning flex-shrink-0 mt-0.5" />
+                  ) : (
                     <div>
-                      <p className="font-medium text-accent-warning">Position limit exceeded</p>
-                      <p className="text-foreground-muted text-xs mt-1">
-                        This trade (${total.toFixed(2)}) exceeds your {positionLimitPercentage}% position limit (${positionLimitInUSD.toFixed(2)}). Reduce the amount or disable position limits.
+                      <span className="text-xs text-foreground-muted mb-1 block">
+                        Current Market Price
+                      </span>
+                      <div
+                        className="w-full rounded-lg bg-accent-market/40 border border-accent-market/30 px-3 py-2 text-accent-market text-sm font-mono"
+                        aria-label={`Current market price: ${fmt(
+                          marketPrice
+                        )} USDC`}
+                      >
+                        {fmt(marketPrice)} USDC
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Amount */}
+                  <div>
+                    <label
+                      htmlFor="trade-amount"
+                      className="text-xs text-foreground-muted mb-1 block"
+                    >
+                      Amount (XLM)
+                    </label>
+                    <input
+                      id="trade-amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
+                      aria-describedby={
+                        amountError ? "trade-amount-error" : undefined
+                      }
+                      aria-invalid={!!amountError}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-foreground placeholder-foreground-subtle text-sm
+                        focus:outline-none focus:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                    />
+                    {amountError && (
+                      <p
+                        id="trade-amount-error"
+                        role="alert"
+                        className="mt-1 text-xs text-accent-danger"
+                      >
+                        {amountError}
                       </p>
+                    )}
+
+                    {/* Quick size presets */}
+                    <div
+                      className="mt-1.5 flex gap-1"
+                      role="group"
+                      aria-label="Quick size presets"
+                    >
+                      {sizePresets.map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => applyPreset(pct)}
+                          disabled={!price}
+                          aria-label={`Set amount to ${
+                            pct === 100 ? "maximum" : `${pct}%`
+                          } of wallet balance`}
+                          className={`flex-1 rounded-md py-1 text-xs font-medium transition-colors
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface
+                            ${
+                              !price
+                                ? "cursor-not-allowed bg-foreground/5 text-foreground-subtle"
+                                : "bg-foreground/10 text-foreground-muted hover:bg-foreground/20 hover:text-foreground"
+                            }`}
+                        >
+                          {pct === 100 ? "Max" : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
+                    {editingPresets ? (
+                      <TradePresetEditor onDone={() => setEditingPresets(false)} />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setEditingPresets(true)}
+                        className="mt-1 text-xs text-foreground-muted hover:text-foreground underline-offset-2 hover:underline"
+                      >
+                        Edit presets
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Total (read-only) */}
+                  <div>
+                    <span className="text-xs text-foreground-muted mb-1 block">
+                      Total (USDC)
+                    </span>
+                    <div
+                      className={`w-full rounded-lg border px-3 py-2 text-sm font-mono
+                        ${
+                          insufficient
+                            ? "border-accent-danger/50 bg-accent-danger/10 text-accent-danger"
+                            : "border-border bg-input text-foreground"
+                        }`}
+                      aria-label={`Total: $${total.toFixed(4)} USDC${
+                        insufficient ? " — insufficient balance" : ""
+                      }`}
+                    >
+                      ${total.toFixed(4)}
+                      {insufficient && (
+                        <span className="ml-2 text-xs text-accent-danger">
+                          Insufficient balance
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Estimated fees and net amount, recalculated as amount or quote changes */}
+                  <div className="rounded-lg border border-border bg-input px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground-subtle">
+                        Est. trade fee ({(tradeFeePercent * 100).toFixed(2)}%)
+                      </span>
+                      <span className="font-mono font-medium text-foreground">
+                        {formatEstimate(tradeFee)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-foreground-subtle">
+                        Est. network fee
+                      </span>
+                      <span className="font-mono font-medium text-foreground">
+                        {formatEstimate(networkFeeUSDC)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1 border-t border-border pt-1">
+                      <span className="text-foreground-subtle">
+                        Est. net amount
+                      </span>
+                      <span className="font-mono font-medium text-foreground">
+                        {formatEstimate(netAmount)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Low balance alert */}
+                  {insufficient && (
+                    <div
+                      role="alert"
+                      className="mt-2 rounded-md border border-accent-danger/40 bg-accent-danger/10 p-3 text-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-accent-danger">
+                            Low balance
+                          </p>
+                          <p className="text-foreground-muted text-xs mt-1">
+                            You do not have enough funds to place this trade.
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <a
+                            href="https://www.stellar.org/lumens/"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center rounded-md bg-accent-market px-3 py-1 text-xs font-medium text-foreground hover:opacity-90
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                          >
+                            Top up
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Position limit warning */}
+                  {exceedsPositionLimit && positionLimitInUSD !== null && (
+                    <div
+                      role="alert"
+                      className="mt-2 rounded-md border border-accent-warning/40 bg-accent-warning/10 p-3 text-sm"
+                    >
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-4 w-4 text-accent-warning flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-accent-warning">
+                            Position limit exceeded
+                          </p>
+                          <p className="text-foreground-muted text-xs mt-1">
+                            This trade (${total.toFixed(2)}) exceeds your{" "}
+                            {positionLimitPercentage}% position limit ($
+                            {positionLimitInUSD.toFixed(2)}). Reduce the amount
+                            or disable position limits.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stop-loss slider */}
+                  <div>
+                    <div className="flex justify-between text-xs text-foreground-muted mb-1">
+                      <label htmlFor="stop-loss-slider">
+                        <GlossaryTerm term="stop-loss">Stop-Loss</GlossaryTerm>
+                      </label>
+                      <span
+                        className="text-accent-warning font-medium"
+                        aria-hidden="true"
+                      >
+                        -{stopLoss}%
+                      </span>
+                    </div>
+                    <input
+                      id="stop-loss-slider"
+                      type="range"
+                      min={1}
+                      max={50}
+                      value={stopLoss}
+                      onChange={(e) => setStopLoss(Number(e.target.value))}
+                      aria-valuemin={1}
+                      aria-valuemax={50}
+                      aria-valuenow={stopLoss}
+                      aria-valuetext={`${stopLoss}% stop-loss`}
+                      aria-describedby="stop-loss-help"
+                      className="w-full accent-[hsl(var(--accent-warning))]
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface rounded"
+                    />
+                    <span id="stop-loss-help" className="sr-only">
+                      Set the percentage loss at which to automatically sell.
+                      Currently set to {stopLoss} percent.
+                    </span>
+                  </div>
+
+                  {/* Position limit toggle */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      id="position-limit-label"
+                      className="text-sm text-foreground flex items-center gap-1"
+                    >
+                      Position Limit
+                      <Info
+                        size={13}
+                        className="text-foreground-subtle"
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <button
+                      role="switch"
+                      aria-checked={positionLimit}
+                      aria-labelledby="position-limit-label"
+                      aria-describedby="position-limit-help"
+                      onClick={() => setPositionLimit((v) => !v)}
+                      className={`relative w-10 h-5 rounded-full transition-colors
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface
+                        ${positionLimit ? "bg-primary" : "bg-foreground/15"}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-foreground shadow transition-transform ${
+                          positionLimit ? "translate-x-5" : ""
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <span id="position-limit-help" className="sr-only">
+                      Position limit helps manage risk by limiting the size of
+                      your position
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fee disclosure */}
+                <FeeDisclosurePanel tradeTotal={total} className="mt-4" />
+
+                {/* Slippage warning — non-blocking, shown inline before review */}
+                <SlippageWarning
+                  slippage={estimatedSlippage}
+                  threshold={SLIPPAGE_THRESHOLD}
+                  onConfirm={() => setSlippageAcknowledged(true)}
+                  onCancel={onClose}
+                />
+
+                {/* Review button — advances to review step; does NOT submit */}
+                <button
+                  onClick={() => setStep("review")}
+                  disabled={disabled}
+                  aria-disabled={disabled}
+                  className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold transition-all
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface
+                    ${
+                      disabled
+                        ? "bg-foreground/10 text-foreground-subtle cursor-not-allowed"
+                        : type === "MARKET"
+                        ? "bg-accent-market hover:opacity-90 text-foreground"
+                        : "bg-primary hover:opacity-90 text-primary-foreground"
+                    }`}
+                >
+                  Review Order
+                </button>
+
+                {/* Explicit discard — clears the saved draft for this context */}
+                {hasDraftFields && (
+                  <button
+                    type="button"
+                    onClick={discardDraft}
+                    className="mt-2 w-full rounded-md py-1 text-xs text-foreground-muted hover:text-foreground transition-colors
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  >
+                    Discard draft
+                  </button>
+                )}
+
+                {/* Keyboard shortcut hint */}
+                <p
+                  className="mt-2 text-center text-xs text-foreground-subtle"
+                  aria-hidden="true"
+                >
+                  <kbd className="font-mono">Esc</kbd> to cancel
+                </p>
+              </>
+            ) : (
+              <>
+                {/* Review step — shows exact order details before submission */}
+                <div
+                  role="region"
+                  aria-label="Order review"
+                  className="space-y-3"
+                >
+                  {/* Rollback error: shown when on-chain confirmation fails */}
+                  {confirmError && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-3 rounded-lg border border-accent-danger/40 bg-accent-danger/10 p-3 text-sm"
+                    >
+                      <AlertCircle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-accent-danger"
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <p className="font-medium text-accent-danger">
+                          Confirmation failed
+                        </p>
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                          {confirmError}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-foreground-muted mb-3">
+                    Review your order before confirming. Use Back to edit.
+                  </p>
+
+                  {/* Quote validity — shown only when the quote carries an expiry */}
+                  {quoteSecondsLeft !== null && (
+                    <div
+                      role={quoteExpired ? "alert" : undefined}
+                      className={`rounded-lg border px-3 py-2 text-sm ${
+                        quoteExpired
+                          ? "border-accent-danger/40 bg-accent-danger/10"
+                          : "border-border bg-input"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-foreground-muted">Quote</span>
+                        <span
+                          className={`font-mono font-medium ${
+                            quoteExpired
+                              ? "text-accent-danger"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {quoteExpired
+                            ? "Expired"
+                            : `Expires in ${quoteSecondsLeft}s`}
+                        </span>
+                      </div>
+                      {quoteExpired && (
+                        <p className="mt-1 text-xs text-foreground-muted">
+                          This quote has expired. Refresh it to confirm your
+                          order.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {onRefreshQuote && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleRefreshQuote}
+                        disabled={quoteRefreshing || submitting}
+                        aria-busy={quoteRefreshing}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/5 disabled:cursor-not-allowed disabled:opacity-50
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                      >
+                        <RefreshCw
+                          size={14}
+                          aria-hidden="true"
+                          className={quoteRefreshing ? "animate-spin" : ""}
+                        />
+                        {quoteRefreshing ? "Refreshing quote…" : "Refresh quote"}
+                      </button>
+                      {quoteError && (
+                        <p role="alert" className="text-xs text-accent-danger">
+                          {quoteError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Signing wallet and network — the order is submitted from this account */}
+                  <div className="rounded-lg border border-border bg-input divide-y divide-border text-sm">
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">Wallet</span>
+                      <span className="font-mono font-medium text-foreground">
+                        {walletReady && walletKey
+                          ? truncateKey(walletKey)
+                          : "Not connected"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">Network</span>
+                      <span
+                        className={`font-mono font-medium ${
+                          networkMismatch
+                            ? "text-accent-danger"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {networkLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  {!walletReady && (
+                    <p role="alert" className="text-xs text-accent-danger">
+                      Connect a wallet to place this order.
+                    </p>
+                  )}
+                  {networkMismatch && (
+                    <p role="alert" className="text-xs text-accent-danger">
+                      Switch your wallet to {appNetwork} to place this order.
+                    </p>
+                  )}
+
+                  {/* Summary rows */}
+                  <div className="rounded-lg border border-border bg-input divide-y divide-border text-sm">
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">Order type</span>
+                      <span className="font-medium text-foreground">
+                        {type === "LIMIT" ? "Limit" : "Market"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">Amount</span>
+                      <span className="font-mono font-medium text-foreground">
+                        {amount} XLM
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">Price</span>
+                      <span className="font-mono font-medium text-foreground">
+                        {type === "MARKET"
+                          ? `${fmt(marketPrice)} USDC (market)`
+                          : `${limitPrice} USDC`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">Total</span>
+                      <span className="font-mono font-medium text-foreground">
+                        ${total.toFixed(4)} USDC
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-foreground-muted">
+                        <GlossaryTerm term="stop-loss">Stop-loss</GlossaryTerm>
+                      </span>
+                      <span className="font-mono font-medium text-accent-warning">
+                        -{stopLoss}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Fee breakdown */}
+                  <div className="rounded-lg bg-white/3 border border-white/6 px-3 py-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground-subtle">
+                        Trade fee ({(tradeFeePercent * 100).toFixed(2)}%)
+                      </span>
+                      <span className="font-mono font-medium">
+                        {formatEstimate(tradeFee)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-foreground-subtle">
+                        Network fee
+                      </span>
+                      <span className="font-mono font-medium">
+                        {feeEstimateAvailable
+                          ? `${networkFee} (~$${networkFeeUSDC.toFixed(6)})`
+                          : networkFee}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 border-t pt-2">
+                      <span className="text-foreground-subtle">Net amount</span>
+                      <span className="font-mono font-medium">
+                        {formatEstimate(netAmount)}
+                      </span>
                     </div>
                   </div>
                 </div>
-              )}
 
-              {/* Stop-loss slider */}
-              <div>
-                <div className="flex justify-between text-xs text-foreground-muted mb-1">
-                  <label htmlFor="stop-loss-slider">Stop-Loss</label>
-                  <span className="text-accent-warning font-medium" aria-hidden="true">
-                    -{stopLoss}%
-                  </span>
+                {/* Review step action buttons */}
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => setStep("input")}
+                    className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/5
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                    aria-label="Back to edit inputs"
+                  >
+                    <ArrowLeft size={15} aria-hidden="true" className="rtl-flip" />
+                    Back
+                  </button>
+
+                  <button
+                    onClick={handleConfirm}
+                    disabled={submitting || quoteExpired || disabled}
+                    aria-disabled={submitting || quoteExpired || disabled}
+                    aria-busy={submitting}
+                    aria-describedby="confirm-button-help"
+                    className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-all
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface
+                      ${
+                        disabled || submitting || quoteExpired
+                          ? "bg-foreground/10 text-foreground-subtle cursor-not-allowed"
+                          : type === "MARKET"
+                          ? "bg-accent-market hover:opacity-90 text-foreground"
+                          : "bg-primary hover:opacity-90 text-primary-foreground"
+                      }`}
+                  >
+                    {submitting
+                      ? "Submitting…"
+                      : `Confirm ${
+                          type === "LIMIT" ? "Limit" : "Market"
+                        } Order`}
+                  </button>
                 </div>
-                <input
-                  id="stop-loss-slider"
-                  type="range"
-                  min={1}
-                  max={50}
-                  value={stopLoss}
-                  onChange={(e) => setStopLoss(Number(e.target.value))}
-                  aria-valuemin={1}
-                  aria-valuemax={50}
-                  aria-valuenow={stopLoss}
-                  aria-valuetext={`${stopLoss}% stop-loss`}
-                  aria-describedby="stop-loss-help"
-                  className="w-full accent-[hsl(var(--accent-warning))]
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface rounded"
-                />
-                <span id="stop-loss-help" className="sr-only">
-                  Set the percentage loss at which to automatically sell. Currently set to{" "}
-                  {stopLoss} percent.
-                </span>
-              </div>
-
-              {/* Position limit toggle */}
-              <div className="flex items-center justify-between">
-                <span
-                  id="position-limit-label"
-                  className="text-sm text-foreground flex items-center gap-1"
-                >
-                  Position Limit
-                  <Info size={13} className="text-foreground-subtle" aria-hidden="true" />
-                </span>
-                <button
-                  role="switch"
-                  aria-checked={positionLimit}
-                  aria-labelledby="position-limit-label"
-                  aria-describedby="position-limit-help"
-                  onClick={() => setPositionLimit((v) => !v)}
-                  className={`relative w-10 h-5 rounded-full transition-colors
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface
-                    ${positionLimit ? "bg-primary" : "bg-foreground/15"}`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-foreground shadow transition-transform ${
-                      positionLimit ? "translate-x-5" : ""
-                    }`}
-                    aria-hidden="true"
-                  />
-                </button>
-                <span id="position-limit-help" className="sr-only">
-                  Position limit helps manage risk by limiting the size of your position
-                </span>
-              </div>
-            </div>
-
-            {/* Fee disclosure */}
-            <FeeDisclosurePanel tradeTotal={total} className="mt-4" />
-
-            {/* Fee breakdown */}
-            <div className="mt-4 rounded-lg bg-white/3 border border-white/6 px-3 py-3 text-sm sm:px-4">
-              <div className="flex items-center justify-between">
-                <span className="text-foreground-subtle">
-                  Trade fee ({(tradeFeePercent * 100).toFixed(2)}%)
-                </span>
-                <span className="font-mono font-medium">${tradeFee.toFixed(4)}</span>
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-foreground-subtle">Network fee</span>
-                <span className="font-mono font-medium">
-                  {networkFee} (~${networkFeeUSDC.toFixed(6)})
-                </span>
-              </div>
-              <div className="flex items-center justify-between mt-2 border-t pt-2">
-                <span className="text-foreground-subtle">Net amount</span>
-                <span className="font-mono font-medium">${netAmount.toFixed(4)}</span>
-              </div>
-            </div>
-
-            {/* Footer metrics */}
-            <div className="mt-5 rounded-lg bg-white/5 border border-white/10 px-3 py-3 grid grid-cols-3 gap-1 text-center text-xs sm:px-4 sm:gap-2">
-              <div>
-                <p className="text-foreground-subtle">Network Fee</p>
-                <p className="text-foreground font-medium mt-0.5">{networkFee}</p>
-              </div>
-              <div>
-                <p className="text-foreground-subtle">Price Impact</p>
-                <p className="text-accent-warning font-medium mt-0.5">{priceImpact}</p>
-              </div>
-              <div>
-                <p className="text-foreground-subtle">Execution</p>
-                <p className="text-foreground font-medium mt-0.5">{execMethod}</p>
-              </div>
-            </div>
-
-            {/* Slippage warning — non-blocking, shown inline before confirm */}
-            <SlippageWarning
-              slippage={estimatedSlippage}
-              threshold={SLIPPAGE_THRESHOLD}
-              onConfirm={() => setSlippageAcknowledged(true)}
-              onCancel={onClose}
-            />
-
-            {/* Confirm button */}
-            <button
-              onClick={handleConfirm}
-              disabled={disabled}
-              aria-disabled={disabled}
-              aria-describedby="confirm-button-help"
-              aria-busy={submitting}
-              className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold transition-all
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface
-                ${
-                  disabled
-                    ? "bg-foreground/10 text-foreground-subtle cursor-not-allowed"
-                    : type === "MARKET"
-                    ? "bg-accent-market hover:opacity-90 text-foreground"
-                    : "bg-primary hover:opacity-90 text-primary-foreground"
-                }`}
-            >
-              {submitting
-                ? "Submitting…"
-                : `Confirm ${type === "LIMIT" ? "Limit" : "Market"} Order`}
-            </button>
-            <span id="confirm-button-help" className="sr-only">
-              {disabled
-                ? insufficient
-                  ? "Cannot place order: insufficient balance"
-                  : exceedsPositionLimit
-                  ? `Cannot place order: exceeds position limit of $${positionLimitInUSD?.toFixed(2)}`
-                  : "Cannot place order: please fill in all required fields"
-                : `Place ${type.toLowerCase()} order for ${amount || 0} XLM at ${
-                    type === "MARKET" ? "market price" : `${limitPrice || 0} USDC`
+                <span id="confirm-button-help" className="sr-only">
+                  {`Place ${type.toLowerCase()} order for ${amount} XLM at ${
+                    type === "MARKET" ? "market price" : `${limitPrice} USDC`
                   }. Press Enter to confirm.`}
-            </span>
+                </span>
 
-            {/* Keyboard shortcut hint */}
-            <p className="mt-2 text-center text-xs text-foreground-subtle" aria-hidden="true">
-              <kbd className="font-mono">Esc</kbd> to cancel ·{" "}
-              <kbd className="font-mono">Enter</kbd> to confirm
-            </p>
+                <p
+                  className="mt-2 text-center text-xs text-foreground-subtle"
+                  aria-hidden="true"
+                >
+                  <kbd className="font-mono">Esc</kbd> to cancel ·{" "}
+                  <kbd className="font-mono">Enter</kbd> to confirm
+                </p>
+              </>
+            )}
           </motion.div>
         </motion.div>
       )}

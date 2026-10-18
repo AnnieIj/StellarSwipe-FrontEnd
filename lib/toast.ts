@@ -1,10 +1,11 @@
 import { DEFAULT_TOAST_DURATION, useToastStore } from "@/store/useToastStore";
-import type { ToastTone } from "@/store/useToastStore";
+import type { ToastAction, ToastTone } from "@/store/useToastStore";
 
 export interface ToastOptions {
   description?: string;
   duration?: number;
   link?: { href: string; label: string };
+  action?: ToastAction;
 }
 
 function showToast(tone: ToastTone, title: string, options?: ToastOptions) {
@@ -13,6 +14,7 @@ function showToast(tone: ToastTone, title: string, options?: ToastOptions) {
     title,
     description: options?.description,
     link: options?.link,
+    action: options?.action,
     duration: options?.duration ?? DEFAULT_TOAST_DURATION,
   });
 }
@@ -32,9 +34,33 @@ export function useToast() {
   const dismiss = useToastStore((state) => state.dismiss);
 
   return {
-    success: (title: string, options?: ToastOptions) => enqueue({ tone: "success", title, description: options?.description, link: options?.link, duration: options?.duration ?? DEFAULT_TOAST_DURATION }),
-    error: (title: string, options?: ToastOptions) => enqueue({ tone: "error", title, description: options?.description, link: options?.link, duration: options?.duration ?? DEFAULT_TOAST_DURATION }),
-    info: (title: string, options?: ToastOptions) => enqueue({ tone: "info", title, description: options?.description, link: options?.link, duration: options?.duration ?? DEFAULT_TOAST_DURATION }),
+    success: (title: string, options?: ToastOptions) =>
+      enqueue({
+        tone: "success",
+        title,
+        description: options?.description,
+        link: options?.link,
+        action: options?.action,
+        duration: options?.duration ?? DEFAULT_TOAST_DURATION,
+      }),
+    error: (title: string, options?: ToastOptions) =>
+      enqueue({
+        tone: "error",
+        title,
+        description: options?.description,
+        link: options?.link,
+        action: options?.action,
+        duration: options?.duration ?? DEFAULT_TOAST_DURATION,
+      }),
+    info: (title: string, options?: ToastOptions) =>
+      enqueue({
+        tone: "info",
+        title,
+        description: options?.description,
+        link: options?.link,
+        action: options?.action,
+        duration: options?.duration ?? DEFAULT_TOAST_DURATION,
+      }),
     dismiss,
   };
 }

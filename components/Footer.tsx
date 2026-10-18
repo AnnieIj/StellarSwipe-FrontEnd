@@ -26,9 +26,12 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="flex flex-col gap-3">
-            <span className="text-lg font-bold text-foreground">StellarSwipe</span>
+            <span className="text-lg font-bold text-foreground">
+              StellarSwipe
+            </span>
             <p className="text-sm text-foreground-muted leading-relaxed">
-              AI-powered trading signals on the Stellar SDEX. Connect your wallet, follow top providers, and swipe to trade.
+              AI-powered trading signals on the Stellar SDEX. Connect your
+              wallet, follow top providers, and swipe to trade.
             </p>
           </div>
 

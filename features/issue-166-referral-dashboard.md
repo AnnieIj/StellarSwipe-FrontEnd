@@ -3,6 +3,7 @@
 Planned frontend scaffold for referral tracking dashboard.
 
 Acceptance coverage:
+
 - Unique referral link generation (frontend placeholder): app/referral/page.tsx
 - Copy referral link button with feedback: implemented in component
 - Share options (Twitter, Telegram, WhatsApp, Email): UI buttons
@@ -14,4 +15,5 @@ Acceptance coverage:
 - Terms and conditions link: included
 
 Notes:
+
 - Real referral link generation + backend persistence requires API endpoints.
